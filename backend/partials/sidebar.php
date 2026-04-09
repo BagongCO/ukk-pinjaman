@@ -329,6 +329,13 @@ function isActive($keyword)
                 </a>
             </li>
 
+            <li class="nav-item <?= isActive('pengembalian') ?>">
+                <a class="nav-link" href="../pengembalian/pengembalian.php">
+                    <i class="mdi mdi-clipboard-list"></i>
+                    <span>Pengembalian</span>
+                </a>
+            </li>
+
             <li class="nav-item <?= isActive('laporan_peminjaman') ?>">
                 <a class="nav-link" data-bs-toggle="collapse" href="#laporanMenu">
                     <i class="mdi mdi-file-document"></i>
