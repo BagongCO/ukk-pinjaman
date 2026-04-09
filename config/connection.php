@@ -2,7 +2,7 @@
 $host = "localhost";
 $username = "root";
 $password = "";
-$dbName = "db_peminjaman_ps";
+$dbName = "peminjaman_lampu";
 
 // Membuat koneksi ke database
 $connect = mysqli_connect($host, $username, $password, $dbName);
