@@ -11,16 +11,15 @@ if (!isset($_SESSION['id_user'])) {
 
 /* ===============================
    AMBIL DATA PEMINJAMAN
-   JOIN dengan tabel user dan barang
+   JOIN dengan tabel user (cek dulu nama tabel user nya)
 ================================ */
+// SEMENTARA PAKAI INI DULU (tanpa JOIN user)
 $query = "SELECT 
             p.*,
             b.nama_barang,
-            b.harga_per_jam,
-            u.username as nama_user
+            b.harga_per_jam
           FROM peminjaman p
           LEFT JOIN barang b ON p.id_barang = b.id_barang
-          LEFT JOIN user u ON p.id_user = u.id_user
           ORDER BY p.id_peminjaman DESC";
 
 $data = mysqli_query($connect, $query);
@@ -56,7 +55,7 @@ $totalPeminjaman = mysqli_num_rows($data);
                         </h3>
                     </div>
 
-                    <!-- ALERT SUCCESS -->
+                    <!-- ALERT -->
                     <?php if (isset($_SESSION['success'])): ?>
                         <div class="alert alert-success alert-dismissible fade show">
                             <i class="mdi mdi-check-circle me-2"></i>
@@ -66,7 +65,6 @@ $totalPeminjaman = mysqli_num_rows($data);
                         <?php unset($_SESSION['success']); ?>
                     <?php endif; ?>
 
-                    <!-- ALERT ERROR -->
                     <?php if (isset($_SESSION['error'])): ?>
                         <div class="alert alert-danger alert-dismissible fade show">
                             <i class="mdi mdi-alert-circle me-2"></i>
@@ -83,17 +81,11 @@ $totalPeminjaman = mysqli_num_rows($data);
                                 <h4 class="card-title mb-2 mb-sm-0">
                                     <i class="mdi mdi-format-list-bulleted"></i> Daftar Peminjaman
                                 </h4>
-                                <div class="d-flex gap-2">
-                                    <a href="create.php" class="btn btn-gradient-primary">
-                                        <i class="mdi mdi-plus"></i> Tambah Peminjaman
-                                    </a>
-                                    <a href="laporan.php" class="btn btn-gradient-info">
-                                        <i class="mdi mdi-file-document"></i> Laporan
-                                    </a>
-                                </div>
+                                <a href="create.php" class="btn btn-gradient-primary">
+                                    <i class="mdi mdi-plus"></i> Tambah Peminjaman
+                                </a>
                             </div>
 
-                            <!-- Info Total -->
                             <div class="alert alert-info d-flex justify-content-between align-items-center">
                                 <div>
                                     <i class="mdi mdi-information-outline"></i>
@@ -108,8 +100,8 @@ $totalPeminjaman = mysqli_num_rows($data);
                                             <tr>
                                                 <th width="50">No</th>
                                                 <th>ID Pinjam</th>
-                                                <th>Peminjam</th>
-                                                <th>Barang</th>
+                                                <th>ID User</th>
+                                                <th>Nama Barang</th>
                                                 <th>Tgl Pinjam</th>
                                                 <th>Jam Pinjam</th>
                                                 <th>Tgl Kembali</th>
@@ -126,30 +118,37 @@ $totalPeminjaman = mysqli_num_rows($data);
                                                 <tr>
                                                     <td><?= $no++ ?></td>
                                                     <td><?= $row['id_peminjaman'] ?></td>
-                                                    <td><?= htmlspecialchars($row['nama_user'] ?? 'User tidak ditemukan') ?></td>
-                                                    <td><?= htmlspecialchars($row['nama_barang'] ?? 'Barang tidak ditemukan') ?></td>
-                                                    <td><?= $row['tanggal_pinjam'] ? date('d-m-Y', strtotime($row['tanggal_pinjam'])) : '-' ?></td>
-                                                    <td><?= $row['jam_pinjam'] ?? '-' ?></td>
+                                                    <td><?= $row['id_user'] ?></td>
+                                                    <td><?= htmlspecialchars($row['nama_barang'] ?? '-') ?></td>
+                                                    <td><?= $row['tanggal_pinjaman'] ? date('d-m-Y', strtotime($row['tanggal_pinjaman'])) : '-' ?></td>
+                                                    <td><?= $row['jam_pinjaman'] ?? '-' ?></td>
                                                     <td><?= $row['tanggal_kembali'] ? date('d-m-Y', strtotime($row['tanggal_kembali'])) : '-' ?></td>
                                                     <td><?= $row['jam_kembali'] ?? '-' ?></td>
                                                     <td><?= $row['durasi_jam'] ?> jam</td>
                                                     <td>Rp <?= number_format($row['total_harga'], 0, ',', '.') ?></td>
                                                     <td>
                                                         <?php 
+                                                        $statusClass = '';
+                                                        $statusText = '';
                                                         switch($row['status']) {
                                                             case 'dipinjam':
-                                                                echo '<span class="badge bg-warning text-dark px-3 py-2">Dipinjam</span>';
+                                                                $statusClass = 'badge bg-warning text-dark';
+                                                                $statusText = 'Dipinjam';
                                                                 break;
                                                             case 'dikembalikan':
-                                                                echo '<span class="badge bg-success px-3 py-2">Dikembalikan</span>';
+                                                                $statusClass = 'badge bg-success';
+                                                                $statusText = 'Dikembalikan';
                                                                 break;
                                                             case 'batal':
-                                                                echo '<span class="badge bg-danger px-3 py-2">Batal</span>';
+                                                                $statusClass = 'badge bg-danger';
+                                                                $statusText = 'Batal';
                                                                 break;
                                                             default:
-                                                                echo '<span class="badge bg-secondary px-3 py-2">' . $row['status'] . '</span>';
+                                                                $statusClass = 'badge bg-secondary';
+                                                                $statusText = $row['status'];
                                                         }
                                                         ?>
+                                                        <span class="<?= $statusClass ?> px-3 py-2"><?= $statusText ?></span>
                                                     </td>
                                                     <td>
                                                         <div class="d-flex gap-1 justify-content-center flex-wrap">
@@ -185,21 +184,14 @@ $totalPeminjaman = mysqli_num_rows($data);
                                                     <div class="modal-dialog modal-dialog-centered modal-sm">
                                                         <div class="modal-content">
                                                             <div class="modal-header bg-danger text-white">
-                                                                <h5 class="modal-title">
-                                                                    <i class="mdi mdi-alert"></i> Hapus Peminjaman
-                                                                </h5>
+                                                                <h5 class="modal-title">Hapus Peminjaman</h5>
                                                                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                                                             </div>
                                                             <form action="../../action/peminjaman/destroy.php" method="POST">
                                                                 <div class="modal-body text-center">
                                                                     <input type="hidden" name="id_peminjaman" value="<?= $row['id_peminjaman'] ?>">
-                                                                    <p>
-                                                                        Yakin hapus peminjaman 
-                                                                        <b>#<?= $row['id_peminjaman'] ?></b> ?
-                                                                    </p>
-                                                                    <p class="text-muted small">
-                                                                        Barang: <?= htmlspecialchars($row['nama_barang'] ?? '-') ?>
-                                                                    </p>
+                                                                    <p>Yakin hapus peminjaman <b>#<?= $row['id_peminjaman'] ?></b>?</p>
+                                                                    <p class="text-muted small">Barang: <?= htmlspecialchars($row['nama_barang'] ?? '-') ?></p>
                                                                 </div>
                                                                 <div class="modal-footer justify-content-center">
                                                                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
@@ -241,19 +233,13 @@ $totalPeminjaman = mysqli_num_rows($data);
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header bg-gradient-primary text-white">
-                    <h5 class="modal-title">
-                        <i class="mdi mdi-receipt"></i> Struk Peminjaman
-                    </h5>
+                    <h5 class="modal-title">Struk Peminjaman</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body" id="strukContent">
-                    <!-- Konten struk akan diisi via JS -->
-                </div>
+                <div class="modal-body" id="strukContent"></div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
-                    <button type="button" class="btn btn-gradient-primary" onclick="printStrukModal()">
-                        <i class="mdi mdi-printer"></i> Cetak
-                    </button>
+                    <button type="button" class="btn btn-gradient-primary" onclick="window.print()">Cetak</button>
                 </div>
             </div>
         </div>
@@ -261,10 +247,10 @@ $totalPeminjaman = mysqli_num_rows($data);
 
     <?php include '../../partials/script.php' ?>
 
-    <!-- DataTables CSS & JS -->
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
-    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <!-- DataTables -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
 
     <script>
         $(document).ready(function() {
@@ -274,20 +260,10 @@ $totalPeminjaman = mysqli_num_rows($data);
                     search: "Cari:",
                     lengthMenu: "Tampilkan _MENU_ data",
                     info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
-                    infoEmpty: "Tidak ada data",
-                    infoFiltered: "(disaring dari _MAX_ total data)",
-                    paginate: {
-                        first: "Pertama",
-                        previous: "<",
-                        next: ">",
-                        last: "Terakhir"
-                    }
+                    paginate: { previous: "<", next: ">" }
                 },
                 pageLength: 10,
-                order: [[1, 'desc']],
-                columnDefs: [
-                    { orderable: false, targets: [0, 11] }
-                ]
+                order: [[1, 'desc']]
             });
         });
 
@@ -299,141 +275,52 @@ $totalPeminjaman = mysqli_num_rows($data);
                 dataType: 'json',
                 success: function(data) {
                     if (data.success) {
-                        let strukHtml = `
-                            <div class="struk-container" style="font-family: monospace;">
-                                <div style="text-align: center; border-bottom: 1px dashed #000; padding-bottom: 10px; margin-bottom: 15px;">
-                                    <div style="font-size: 18px; font-weight: bold;">PEMINJAMAN ALAT BERAT</div>
+                        let html = `
+                            <div style="font-family: monospace; max-width: 400px; margin:0 auto;">
+                                <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:10px;">
+                                    <h4>PEMINJAMAN ALAT BERAT</h4>
                                     <div>Jl. Contoh No. 123, Kota</div>
-                                    <div>Telp: (021) 1234567</div>
-                                    <div style="border-top: 1px dashed #000; margin: 10px 0;"></div>
                                     <div>No. Transaksi: #${data.id_peminjaman}</div>
                                     <div>Tanggal: ${data.tanggal_transaksi}</div>
                                 </div>
-                                
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                                    <span>Peminjam:</span>
-                                    <span><strong>${data.nama_user || data.id_user}</strong></span>
+                                <div style="margin:15px 0">
+                                    <div>ID User: ${data.id_user}</div>
+                                    <div>Barang: ${data.nama_barang}</div>
                                 </div>
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                                    <span>Barang:</span>
-                                    <span><strong>${data.nama_barang}</strong></span>
-                                </div>
-                                <div style="border-top: 1px dashed #000; margin: 10px 0;"></div>
-                                
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                                    <span>Tanggal Pinjam:</span>
-                                    <span>${data.tanggal_pinjam}</span>
-                                </div>
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                                    <span>Jam Pinjam:</span>
-                                    <span>${data.jam_pinjam}</span>
-                                </div>
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                                    <span>Tanggal Kembali:</span>
-                                    <span>${data.tanggal_kembali || '-'}</span>
-                                </div>
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                                    <span>Jam Kembali:</span>
-                                    <span>${data.jam_kembali || '-'}</span>
-                                </div>
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                                    <span>Durasi Sewa:</span>
-                                    <span>${data.durasi_jam} Jam</span>
-                                </div>
-                                <div style="border-top: 1px dashed #000; margin: 10px 0;"></div>
-                                
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                                    <span>Harga per Jam:</span>
-                                    <span>Rp ${data.harga_per_jam}</span>
-                                </div>
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: bold; font-size: 16px; border-top: 1px solid #000; padding-top: 10px; margin-top: 10px;">
-                                    <span>TOTAL HARGA:</span>
-                                    <span>Rp ${data.total_harga}</span>
-                                </div>
-                                <div style="border-top: 1px dashed #000; margin: 10px 0;"></div>
-                                
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                                    <span>Status:</span>
-                                    <span><strong>${data.status}</strong></span>
-                                </div>
-                                
-                                <div style="text-align: center; margin-top: 20px; padding-top: 10px; border-top: 1px dashed #000; font-size: 12px;">
-                                    <div>Terima kasih atas kepercayaan Anda</div>
-                                    <div>Barang wajib dikembalikan tepat waktu</div>
-                                    <div>--- Simpan struk ini sebagai bukti ---</div>
-                                </div>
+                                <div style="border-top:1px dashed #000; margin:10px 0"></div>
+                                <div>Tgl Pinjam: ${data.tanggal_pinjaman} ${data.jam_pinjaman}</div>
+                                <div>Tgl Kembali: ${data.tanggal_kembali || '-'} ${data.jam_kembali || '-'}</div>
+                                <div>Durasi: ${data.durasi_jam} Jam</div>
+                                <div style="border-top:1px dashed #000; margin:10px 0"></div>
+                                <div>Harga/Jam: Rp ${data.harga_per_jam}</div>
+                                <div style="font-size:18px; font-weight:bold; margin-top:10px">TOTAL: Rp ${data.total_harga}</div>
+                                <div style="border-top:1px dashed #000; margin:10px 0"></div>
+                                <div>Status: ${data.status}</div>
+                                <div style="text-align:center; margin-top:20px; font-size:12px">Terima kasih</div>
                             </div>
                         `;
-                        $('#strukContent').html(strukHtml);
+                        $('#strukContent').html(html);
                         $('#strukModal').modal('show');
                     } else {
-                        alert(data.message || 'Gagal mengambil data struk');
+                        alert(data.message);
                     }
                 },
                 error: function() {
-                    alert('Gagal mengambil data struk. Pastikan file print_struk.php tersedia.');
+                    alert('Gagal mengambil data');
                 }
             });
         }
-
-        function printStrukModal() {
-            window.print();
-        }
-
-        // CSS untuk print struk
-        const printStyle = document.createElement('style');
-        printStyle.textContent = `
-            @media print {
-                .modal-dialog, .modal-content, .modal-body {
-                    position: relative;
-                    margin: 0;
-                    padding: 0;
-                    border: none;
-                    box-shadow: none;
-                }
-                .modal-header, .modal-footer, .btn-close, .btn {
-                    display: none !important;
-                }
-                .struk-container {
-                    margin: 0 auto;
-                    padding: 20px;
-                }
-                body * {
-                    visibility: hidden;
-                }
-                .struk-container, .struk-container * {
-                    visibility: visible;
-                }
-                .struk-container {
-                    position: absolute;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                }
-            }
-        `;
-        document.head.appendChild(printStyle);
     </script>
 
     <style>
-        .badge {
-            font-size: 0.75rem;
-            padding: 0.35rem 0.65rem;
-            border-radius: 30px;
-        }
-        .struk-container {
-            max-width: 400px;
-            margin: 0 auto;
-        }
+        .badge { font-size:0.75rem; padding:0.35rem 0.65rem; border-radius:30px; }
         @media print {
-            .main-panel, .content-wrapper {
-                margin: 0 !important;
-                padding: 0 !important;
-            }
             .navbar, .sidebar, .page-header, .card-header, .alert, .dataTables_filter, 
-            .dataTables_length, .dataTables_paginate, .modal-footer, .btn {
+            .dataTables_length, .dataTables_paginate, .modal-footer, .btn, .modal-header {
                 display: none !important;
             }
+            .modal-content { border: none; }
+            .modal-body { padding: 0; }
         }
     </style>
 
