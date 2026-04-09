@@ -48,25 +48,155 @@ $totalPeminjaman = count($peminjaman);
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
     
     <style>
-        .badge-dipinjam {
-            background: linear-gradient(135deg, #f6c23e 0%, #f4b619 100%);
+        /* ========== RESET & LAYOUT UTAMA ========== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #f8f9fc;
+            overflow-x: hidden;
+        }
+
+        /* ========== SIDEBAR STYLE ========== */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 250px;
+            height: 100vh;
+            background: #4e73df;
+            background-image: linear-gradient(180deg, #4e73df 10%, #224abe 100%);
+            z-index: 1000;
+            transition: all 0.3s;
+            overflow-y: auto;
+        }
+
+        .sidebar .sidebar-brand {
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             color: white;
+            font-weight: bold;
+            font-size: 1.2rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .sidebar .sidebar-brand i {
+            margin-right: 10px;
+        }
+
+        .sidebar .nav-item {
+            padding: 5px 20px;
+        }
+
+        .sidebar .nav-link {
+            color: rgba(255,255,255,0.8);
+            padding: 10px 15px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s;
+            text-decoration: none;
+        }
+
+        .sidebar .nav-link:hover {
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+
+        .sidebar .nav-link i {
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
+
+        .sidebar .nav-link.active {
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+
+        /* ========== NAVBAR STYLE ========== */
+        .topbar {
+            position: fixed;
+            top: 0;
+            left: 250px;
+            right: 0;
+            height: 60px;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+            z-index: 999;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+        }
+
+        .topbar .toggle-sidebar {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: #4e73df;
+            display: none;
+        }
+
+        .topbar .navbar-brand {
+            font-weight: bold;
+            color: #4e73df;
+            text-decoration: none;
+        }
+
+        .topbar .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        /* ========== MAIN CONTENT ========== */
+        .main-content {
+            margin-left: 250px;
+            margin-top: 60px;
+            padding: 20px;
+            min-height: calc(100vh - 60px);
+            transition: all 0.3s;
+        }
+
+        /* ========== CARD & TABLE STYLE ========== */
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        }
+
+        .card-header {
+            background: white;
+            border-bottom: 1px solid #e3e6f0;
+            padding: 1rem 1.35rem;
+        }
+
+        .badge-dipinjam {
+            background: #fff3e0;
+            color: #f6c23e;
             padding: 5px 12px;
             border-radius: 20px;
             font-size: 0.75rem;
             font-weight: 600;
         }
         .badge-dikembalikan {
-            background: linear-gradient(135deg, #1cc88a 0%, #13855c 100%);
-            color: white;
+            background: #e3fcec;
+            color: #1cc88a;
             padding: 5px 12px;
             border-radius: 20px;
             font-size: 0.75rem;
             font-weight: 600;
         }
         .badge-batal {
-            background: linear-gradient(135deg, #e74a3b 0%, #be2617 100%);
-            color: white;
+            background: #fce3e0;
+            color: #e74a3b;
             padding: 5px 12px;
             border-radius: 20px;
             font-size: 0.75rem;
@@ -81,30 +211,28 @@ $totalPeminjaman = count($peminjaman);
             gap: 5px;
             margin: 2px;
             text-decoration: none;
+            border: none;
+            cursor: pointer;
         }
         .btn-view {
-            background: #4facfe;
-            color: white;
-            border: none;
+            background: #e3f2fd;
+            color: #2196f3;
         }
         .btn-edit {
-            background: #f6c23e;
-            color: white;
-            border: none;
+            background: #fff3e0;
+            color: #f6c23e;
         }
         .btn-delete {
-            background: #e74a3b;
-            color: white;
-            border: none;
+            background: #fce3e0;
+            color: #e74a3b;
         }
         .btn-print {
-            background: #36b9cc;
-            color: white;
-            border: none;
+            background: #e8eaf6;
+            color: #5c6bc0;
         }
         .btn-action:hover {
-            opacity: 0.8;
-            color: white;
+            transform: translateY(-2px);
+            transition: 0.2s;
         }
         .dataTable thead th {
             background: #4e73df;
@@ -117,25 +245,16 @@ $totalPeminjaman = count($peminjaman);
             vertical-align: middle;
             text-align: center;
         }
-        /* Print struk style */
+
+        /* ========== STRUK PRINT STYLE ========== */
         @media print {
-            .no-print, .sidebar, .navbar, .btn, .dataTables_filter, .dataTables_length, .dataTables_paginate, .footer-custom, .alert, .btn-add, .card-header-custom .btn {
+            .no-print, .sidebar, .topbar, .btn, .dataTables_filter, .dataTables_length, .dataTables_paginate, .footer-custom, .alert, .btn-add {
                 display: none !important;
             }
-            #main {
+            .main-content {
                 margin-left: 0 !important;
-                width: 100% !important;
+                margin-top: 0 !important;
                 padding: 0 !important;
-            }
-            .card, .main-card {
-                box-shadow: none !important;
-                border: none !important;
-            }
-            body {
-                background: white !important;
-            }
-            .struk-container {
-                padding: 20px;
             }
         }
         .struk-container {
@@ -181,24 +300,112 @@ $totalPeminjaman = count($peminjaman);
         .modal-struk {
             max-width: 500px;
         }
+
+        /* ========== RESPONSIVE ========== */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            .topbar {
+                left: 0;
+            }
+            .topbar .toggle-sidebar {
+                display: block;
+            }
+            .main-content {
+                margin-left: 0;
+            }
+        }
     </style>
 </head>
 <body>
 
-<?php 
-include '../../partials/header.php'; 
-$page = 'peminjaman'; 
-include '../../partials/sidebar.php'; 
-?>
+<!-- SIDEBAR -->
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+        <i class="fas fa-laptop-code"></i>
+        <span>Admin Panel</span>
+    </div>
+    
+    <div class="nav flex-column mt-3">
+        <div class="nav-item">
+            <a class="nav-link" href="../dashboard/index.php">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Dashboard</span>
+            </a>
+        </div>
+        <div class="nav-item">
+            <a class="nav-link" href="../akun/index.php">
+                <i class="fas fa-users"></i>
+                <span>Akun Operator</span>
+            </a>
+        </div>
+        <div class="nav-item">
+            <a class="nav-link" href="../log/index.php">
+                <i class="fas fa-history"></i>
+                <span>Log Aktivitas</span>
+            </a>
+        </div>
+        
+        <div class="nav-item mt-3">
+            <span style="color: rgba(255,255,255,0.5); font-size: 0.7rem; padding-left: 15px;">TRANSAKSI</span>
+        </div>
+        <div class="nav-item">
+            <a class="nav-link" href="../barang/index.php">
+                <i class="fas fa-boxes"></i>
+                <span>Data Barang</span>
+            </a>
+        </div>
+        <div class="nav-item">
+            <a class="nav-link active" href="index.php">
+                <i class="fas fa-hand-holding"></i>
+                <span>Peminjaman</span>
+            </a>
+        </div>
+        <div class="nav-item">
+            <a class="nav-link" href="../laporan/index.php">
+                <i class="fas fa-file-alt"></i>
+                <span>Laporan Peminjaman</span>
+            </a>
+        </div>
+        
+        <div class="nav-item mt-3">
+            <a class="nav-link" href="../../action/auth/logout.php">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </a>
+        </div>
+    </div>
+</div>
 
-<div class="container-fluid">
-    <div id="main">
+<!-- TOPBAR / NAVBAR -->
+<div class="topbar">
+    <button class="toggle-sidebar" id="toggleSidebarBtn">
+        <i class="fas fa-bars"></i>
+    </button>
+    <a href="../dashboard/index.php" class="navbar-brand">
+        <i class="fas fa-tools"></i> Rental Alat Berat
+    </a>
+    <div class="user-info">
+        <span class="text-muted">
+            <i class="fas fa-user-circle"></i> 
+            <?= $_SESSION['username'] ?? 'Admin' ?>
+        </span>
+    </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="main-content" id="mainContent">
+    <div class="container-fluid px-0">
         <div class="card shadow mb-4">
-            <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <div class="card-header py-3 d-flex justify-content-between align-items-center flex-wrap">
                 <h6 class="m-0 font-weight-bold text-primary">
                     <i class="fas fa-hand-holding"></i> Data Peminjaman
                 </h6>
-                <a href="./create.php" class="btn btn-primary btn-sm">
+                <a href="./create.php" class="btn btn-primary btn-sm mt-2 mt-sm-0">
                     <i class="fas fa-plus"></i> Tambah Peminjaman
                 </a>
             </div>
@@ -219,7 +426,7 @@ include '../../partials/sidebar.php';
                     </div>
                 <?php endif; ?>
                 
-                <div class="alert alert-info d-flex align-items-center justify-content-between">
+                <div class="alert alert-info d-flex align-items-center justify-content-between flex-wrap">
                     <div>
                         <i class="fas fa-info-circle"></i>
                         <strong>Total <?php echo $totalPeminjaman; ?> Peminjaman</strong>
@@ -327,9 +534,6 @@ include '../../partials/sidebar.php';
     </div>
 </div>
 
-<?php include '../../partials/footer.php'; ?>
-<?php include '../../partials/script.php'; ?>
-
 <!-- jQuery -->
 <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -351,6 +555,20 @@ $(document).ready(function() {
         },
         pageLength: 10,
         order: [[1, 'desc']]
+    });
+    
+    // Toggle sidebar untuk mobile
+    $('#toggleSidebarBtn').click(function() {
+        $('#sidebar').toggleClass('show');
+    });
+    
+    // Tutup sidebar saat klik di luar (mobile)
+    $(document).click(function(event) {
+        if (!$(event.target).closest('#sidebar').length && !$(event.target).closest('.toggle-sidebar').length) {
+            if ($(window).width() <= 768) {
+                $('#sidebar').removeClass('show');
+            }
+        }
     });
 });
 
