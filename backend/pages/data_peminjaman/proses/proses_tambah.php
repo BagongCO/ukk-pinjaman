@@ -1,182 +1,122 @@
 <?php
+include '../../../app.php';
+
 session_start();
-include "../../../app.php";
 
-// Debug: Lihat semua parameter yang diterima
-// echo "<pre>";
-// print_r($_GET);
-// print_r($_POST);
-// echo "</pre>";
-// exit;
-
-// Cek parameter dari berbagai kemungkinan
-$id_barang = null;
-
-if (isset($_GET['id_barang']) && !empty($_GET['id_barang'])) {
-    $id_barang = $_GET['id_barang'];
-} elseif (isset($_GET['id']) && !empty($_GET['id'])) {
-    $id_barang = $_GET['id'];
-} elseif (isset($_POST['id_barang']) && !empty($_POST['id_barang'])) {
-    $id_barang = $_POST['id_barang'];
-} elseif (isset($_POST['id']) && !empty($_POST['id'])) {
-    $id_barang = $_POST['id'];
-}
-
-// Jika masih tidak ada, tampilkan pesan error yang lebih jelas
-if (!$id_barang) {
-    echo "<div style='padding: 20px; font-family: Arial;'>";
-    echo "<h3>Error: ID Barang tidak ditemukan!</h3>";
-    echo "<p>Parameter yang diterima:</p>";
-    echo "<pre>";
-    echo "GET: ";
-    print_r($_GET);
-    echo "\nPOST: ";
-    print_r($_POST);
-    echo "</pre>";
-    echo "<p>Kembali ke <a href='../index.php'>halaman utama</a></p>";
-    echo "</div>";
+/* ===============================
+   CEK APAKAH TOMBOL DISUBMIT
+================================ */
+if (isset($_POST['tombol'])) {
+    
+    /* ===============================
+       AMBIL DATA DARI FORM
+    ================================= */
+    $id_user = intval($_POST['id_user']);
+    $id_barang = intval($_POST['id_barang']);
+    $tanggal_pinjam = escapeString($_POST['tanggal_pinjam']);
+    $jam_pinjam = escapeString($_POST['jam_pinjam']);
+    $durasi_jam = intval($_POST['durasi_jam']);
+    
+    /* ===============================
+       VALIDASI DATA
+    ================================= */
+    // Validasi tidak boleh kosong
+    if (empty($id_user) || empty($id_barang) || empty($tanggal_pinjam) || empty($jam_pinjam) || empty($durasi_jam)) {
+        $_SESSION['error'] = "Semua data wajib diisi!";
+        header("Location: ../tambah.php");
+        exit;
+    }
+    
+    // Validasi durasi minimal 1 jam
+    if ($durasi_jam < 1) {
+        $_SESSION['error'] = "Durasi sewa minimal 1 jam!";
+        header("Location: ../tambah.php");
+        exit;
+    }
+    
+    /* ===============================
+       AMBIL HARGA BARANG
+    ================================= */
+    $queryHarga = mysqli_query($connect, "SELECT harga_per_jam FROM barang WHERE id_barang = '$id_barang'");
+    
+    if (mysqli_num_rows($queryHarga) == 0) {
+        $_SESSION['error'] = "Barang tidak ditemukan!";
+        header("Location: ../tambah.php");
+        exit;
+    }
+    
+    $dataBarang = mysqli_fetch_assoc($queryHarga);
+    $harga_per_jam = $dataBarang['harga_per_jam'];
+    
+    /* ===============================
+       HITUNG TANGGAL DAN JAM KEMBALI
+    ================================= */
+    $tanggal_kembali = date('Y-m-d', strtotime($tanggal_pinjam . " + $durasi_jam hours"));
+    $jam_kembali = date('H:i:s', strtotime($jam_pinjam . " + $durasi_jam hours"));
+    
+    /* ===============================
+       HITUNG TOTAL HARGA
+    ================================= */
+    $total_harga = $durasi_jam * $harga_per_jam;
+    
+    /* ===============================
+       CEK APAKAH BARANG TERSEDIA
+       (Cek stok barang jika ada kolom jumlah_tersedia)
+    ================================= */
+    // Cek apakah ada kolom jumlah_tersedia di tabel barang
+    $cekKolom = mysqli_query($connect, "SHOW COLUMNS FROM barang LIKE 'jumlah_tersedia'");
+    if (mysqli_num_rows($cekKolom) > 0) {
+        $queryStok = mysqli_query($connect, "SELECT jumlah_tersedia FROM barang WHERE id_barang = '$id_barang'");
+        $stok = mysqli_fetch_assoc($queryStok);
+        
+        if ($stok['jumlah_tersedia'] < 1) {
+            $_SESSION['error'] = "Maaf, barang sedang tidak tersedia!";
+            header("Location: ../tambah.php");
+            exit;
+        }
+    }
+    
+    /* ===============================
+       INSERT DATA PEMINJAMAN
+    ================================= */
+    $queryInsert = "INSERT INTO peminjaman 
+                    (id_user, id_barang, tanggal_pinjam, jam_pinjam, tanggal_kembali, jam_kembali, durasi_jam, total_harga, status, created_at) 
+                    VALUES 
+                    ('$id_user', '$id_barang', '$tanggal_pinjam', '$jam_pinjam', '$tanggal_kembali', '$jam_kembali', '$durasi_jam', '$total_harga', 'dipinjam', NOW())";
+    
+    if (mysqli_query($connect, $queryInsert)) {
+        
+        /* ===============================
+           UPDATE JUMLAH TERSEDIA (JIKA ADA)
+        ================================= */
+        if (mysqli_num_rows($cekKolom) > 0) {
+            mysqli_query($connect, "UPDATE barang SET jumlah_tersedia = jumlah_tersedia - 1 WHERE id_barang = '$id_barang'");
+        }
+        
+        /* ===============================
+           LOG AKTIVITAS (JIKA TABEL ADA)
+        ================================= */
+        $cekLog = mysqli_query($connect, "SHOW TABLES LIKE 'log_aktivitas'");
+        if (mysqli_num_rows($cekLog) > 0) {
+            $aktivitas = "Menambahkan peminjaman barang ID: $id_barang, durasi: $durasi_jam jam, total: Rp " . number_format($total_harga);
+            mysqli_query($connect, "INSERT INTO log_aktivitas (id_user, username, role, aktivitas, waktu) 
+                                    VALUES ('{$_SESSION['id_user']}', '{$_SESSION['username']}', '{$_SESSION['role']}', '$aktivitas', NOW())");
+        }
+        
+        $_SESSION['success'] = "Data peminjaman berhasil ditambahkan!";
+        header("Location: ../index.php");
+        exit;
+        
+    } else {
+        $_SESSION['error'] = "Gagal menambahkan data peminjaman: " . mysqli_error($connect);
+        header("Location: ../tambah.php");
+        exit;
+    }
+    
+} else {
+    // Jika tidak ada tombol yang ditekan
+    $_SESSION['error'] = "Akses tidak sah!";
+    header("Location: ../index.php");
     exit;
 }
-
-// Validasi ID barang
-$id_barang = intval($id_barang);
-
-if ($id_barang <= 0) {
-    echo "ID barang tidak valid!";
-    exit;
-}
-
-$data = mysqli_query($connect, "SELECT * FROM barang WHERE id_barang='$id_barang'");
-
-if (!$data || mysqli_num_rows($data) == 0) {
-    echo "Barang dengan ID $id_barang tidak ditemukan di database!";
-    exit;
-}
-
-$row = mysqli_fetch_assoc($data);
 ?>
-
-<!DOCTYPE html>
-<html>
-
-<head>
-    <title><?php echo htmlspecialchars($row['nama_barang']); ?></title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-
-<body>
-
-    <?php 
-    // Cari navbar di beberapa lokasi
-    $navbar_paths = [
-        __DIR__ . "/../../../partials/navbar.php",
-        __DIR__ . "/../../partials/navbar.php", 
-        __DIR__ . "/../partials/navbar.php",
-        __DIR__ . "/partials/navbar.php"
-    ];
-    
-    $navbar_found = false;
-    foreach ($navbar_paths as $path) {
-        if (file_exists($path)) {
-            include $path;
-            $navbar_found = true;
-            break;
-        }
-    }
-    
-    if (!$navbar_found) {
-        echo '<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-                <div class="container">
-                    <a class="navbar-brand" href="#">Aplikasi Peminjaman</a>
-                </div>
-              </nav>';
-    }
-    ?>
-
-    <div class="container mt-5">
-        <div class="row">
-            <div class="col-md-6">
-                <?php 
-                $foto_path = "../storage/barang/" . $row['foto'];
-                if (!empty($row['foto']) && file_exists($foto_path)): ?>
-                    <img src="<?php echo $foto_path; ?>" class="img-fluid" style="max-height: 400px; width: 100%; object-fit: cover;">
-                <?php else: ?>
-                    <img src="https://via.placeholder.com/400x300?text=No+Image" class="img-fluid">
-                <?php endif; ?>
-            </div>
-
-            <div class="col-md-6">
-                <h2><?php echo htmlspecialchars($row['nama_barang']); ?></h2>
-                <p><?php echo nl2br(htmlspecialchars($row['deskripsi'])); ?></p>
-                
-                <h4 class="text-primary">
-                    Rp <?php echo number_format($row['harga_per_jam'] ?? 0); ?> / jam
-                </h4>
-
-                <?php if (isset($_SESSION['id_user'])): ?>
-                    <form action="proses_pinjam.php" method="POST" class="mt-4">
-                        <input type="hidden" name="id_barang" value="<?php echo $row['id_barang']; ?>">
-                        <input type="hidden" name="id_user" value="<?php echo $_SESSION['id_user']; ?>">
-
-                        <div class="mb-3">
-                            <label for="durasi_jam" class="form-label">Durasi Sewa (Jam)</label>
-                            <input type="number" name="durasi_jam" id="durasi_jam" class="form-control" required min="1" value="1">
-                            <div class="form-text">Minimal 1 jam</div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label>Total Harga:</label>
-                            <h5 id="total_harga" class="text-success">Rp <?php echo number_format($row['harga_per_jam']); ?></h5>
-                        </div>
-
-                        <button type="submit" class="btn btn-success">
-                            Sewa Sekarang
-                        </button>
-                        <a href="../index.php" class="btn btn-secondary">Kembali</a>
-                    </form>
-                <?php else: ?>
-                    <div class="alert alert-warning mt-3">
-                        Silakan <a href="../../auth/login.php">login</a> untuk menyewa barang
-                    </div>
-                <?php endif; ?>
-            </div>
-        </div>
-    </div>
-
-    <script>
-    // Hitung total harga otomatis
-    const hargaPerJam = <?php echo $row['harga_per_jam']; ?>;
-    const durasiInput = document.getElementById('durasi_jam');
-    const totalHargaSpan = document.getElementById('total_harga');
-    
-    if (durasiInput) {
-        durasiInput.addEventListener('input', function() {
-            const durasi = parseInt(this.value) || 0;
-            const total = hargaPerJam * durasi;
-            totalHargaSpan.textContent = 'Rp ' + total.toLocaleString('id-ID');
-        });
-    }
-    </script>
-
-    <?php 
-    $footer_paths = [
-        __DIR__ . "/../../../partials/footer.php",
-        __DIR__ . "/../../partials/footer.php",
-        __DIR__ . "/../partials/footer.php", 
-        __DIR__ . "/partials/footer.php"
-    ];
-    
-    $footer_found = false;
-    foreach ($footer_paths as $path) {
-        if (file_exists($path)) {
-            include $path;
-            $footer_found = true;
-            break;
-        }
-    }
-    ?>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-
-</html>
