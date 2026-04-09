@@ -63,9 +63,6 @@ $totalPengembalian = mysqli_num_rows($data);
                                 <h4 class="card-title">
                                     <i class="mdi mdi-format-list-bulleted"></i> Daftar Peminjaman Aktif
                                 </h4>
-                                <a href="index.php" class="btn btn-gradient-primary">
-                                    <i class="mdi mdi-arrow-left"></i> Kembali
-                                </a>
                             </div>
 
                             <div class="alert alert-info">
