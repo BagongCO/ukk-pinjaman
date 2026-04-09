@@ -1,49 +1,55 @@
 <?php
 include '../../app.php';
 
-/* ===============================
-   CEK LOGIN
-================================ */
 if (!isset($_SESSION['id_user'])) {
     header("Location: ../auth/index.php");
     exit;
 }
 
-/* ===============================
-   AMBIL DATA PEMINJAMAN
-================================ */
+// Ambil data peminjaman dengan JOIN ke users
 $query = "SELECT 
             p.*,
             b.nama_barang,
-            b.harga_per_jam
+            b.harga_per_jam,
+            u.username
           FROM peminjaman p
           LEFT JOIN barang b ON p.id_barang = b.id_barang
+          LEFT JOIN users u ON p.id_user = u.id_user
           ORDER BY p.id_peminjaman DESC";
 
 $data = mysqli_query($connect, $query);
 
 if (!$data) {
-    die("Query Error : " . mysqli_error($connect));
+    die("Query Error: " . mysqli_error($connect));
 }
 
 $totalPeminjaman = mysqli_num_rows($data);
+
+// Ambil data untuk dropdown barang
+$queryBarang = mysqli_query($connect, "SELECT id_barang, nama_barang, harga_per_jam FROM barang ORDER BY nama_barang");
+$barangList = [];
+while ($barang = mysqli_fetch_assoc($queryBarang)) {
+    $barangList[] = $barang;
+}
+
+// Ambil data users untuk dropdown (opsional, tapi lebih baik)
+$queryUsers = mysqli_query($connect, "SELECT id_user, username FROM users ORDER BY username");
+$userList = [];
+while ($user = mysqli_fetch_assoc($queryUsers)) {
+    $userList[] = $user;
+}
 ?>
 
 <?php include '../../partials/header.php' ?>
 
 <body>
     <div class="container-scroller">
-
         <?php include '../../partials/navbar.php' ?>
-
         <div class="container-fluid page-body-wrapper">
-
             <?php include '../../partials/sidebar.php' ?>
-
             <div class="main-panel">
                 <div class="content-wrapper">
 
-                    <!-- HEADER -->
                     <div class="page-header">
                         <h3 class="page-title">
                             <span class="page-title-icon bg-gradient-primary text-white me-2">
@@ -53,10 +59,8 @@ $totalPeminjaman = mysqli_num_rows($data);
                         </h3>
                     </div>
 
-                    <!-- ALERT -->
                     <?php if (isset($_SESSION['success'])): ?>
                         <div class="alert alert-success alert-dismissible fade show">
-                            <i class="mdi mdi-check-circle me-2"></i>
                             <?= htmlspecialchars($_SESSION['success']) ?>
                             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                         </div>
@@ -65,7 +69,6 @@ $totalPeminjaman = mysqli_num_rows($data);
 
                     <?php if (isset($_SESSION['error'])): ?>
                         <div class="alert alert-danger alert-dismissible fade show">
-                            <i class="mdi mdi-alert-circle me-2"></i>
                             <?= htmlspecialchars($_SESSION['error']) ?>
                             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                         </div>
@@ -74,21 +77,11 @@ $totalPeminjaman = mysqli_num_rows($data);
 
                     <div class="card">
                         <div class="card-body">
-
-                            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
-                                <h4 class="card-title mb-2 mb-sm-0">
-                                    <i class="mdi mdi-format-list-bulleted"></i> Daftar Peminjaman
-                                </h4>
-                                <a href="create.php" class="btn btn-gradient-primary">
-                                    <i class="mdi mdi-plus"></i> Tambah Peminjaman
-                                </a>
-                            </div>
-
-                            <div class="alert alert-info d-flex justify-content-between align-items-center">
-                                <div>
-                                    <i class="mdi mdi-information-outline"></i>
-                                    <strong>Total Peminjaman: <?= $totalPeminjaman ?></strong>
-                                </div>
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h4 class="card-title">Daftar Peminjaman</h4>
+                                <button class="btn btn-gradient-primary" data-bs-toggle="modal" data-bs-target="#modalTambah">
+                                    + Tambah Peminjaman
+                                </button>
                             </div>
 
                             <?php if ($totalPeminjaman > 0): ?>
@@ -98,8 +91,8 @@ $totalPeminjaman = mysqli_num_rows($data);
                                             <tr>
                                                 <th width="50">No</th>
                                                 <th>ID Pinjam</th>
-                                                <th>ID User</th>
-                                                <th>Nama Barang</th>
+                                                <th>Peminjam</th>
+                                                <th>Barang</th>
                                                 <th>Tgl Pinjam</th>
                                                 <th>Jam Pinjam</th>
                                                 <th>Tgl Kembali</th>
@@ -107,7 +100,7 @@ $totalPeminjaman = mysqli_num_rows($data);
                                                 <th>Durasi</th>
                                                 <th>Total Harga</th>
                                                 <th>Status</th>
-                                                <th width="200">Aksi</th>
+                                                <th width="150">Aksi</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -116,83 +109,40 @@ $totalPeminjaman = mysqli_num_rows($data);
                                                 <tr>
                                                     <td><?= $no++ ?></td>
                                                     <td><?= $row['id_peminjaman'] ?></td>
-                                                    <td><?= $row['id_user'] ?></td>
+                                                    <td><?= htmlspecialchars($row['username'] ?? 'User #'.$row['id_user']) ?></td>
                                                     <td><?= htmlspecialchars($row['nama_barang'] ?? '-') ?></td>
-                                                    <td><?= $row['tanggal_pinjam'] ? date('d-m-Y', strtotime($row['tanggal_pinjam'])) : '-' ?></td>
-                                                    <td><?= $row['jam_pinjam'] ?? '-' ?></td>
+                                                    <td><?= date('d-m-Y', strtotime($row['tanggal_pinjam'])) ?></td>
+                                                    <td><?= $row['jam_pinjam'] ?></td>
                                                     <td><?= $row['tanggal_kembali'] ? date('d-m-Y', strtotime($row['tanggal_kembali'])) : '-' ?></td>
                                                     <td><?= $row['jam_kembali'] ?? '-' ?></td>
                                                     <td><?= $row['durasi_jam'] ?> jam</td>
                                                     <td>Rp <?= number_format($row['total_harga'], 0, ',', '.') ?></td>
                                                     <td>
-                                                        <?php 
+                                                        <?php
+                                                        $badge = '';
                                                         switch($row['status']) {
-                                                            case 'dipinjam':
-                                                                echo '<span class="badge bg-warning text-dark px-3 py-2">Dipinjam</span>';
-                                                                break;
-                                                            case 'dikembalikan':
-                                                                echo '<span class="badge bg-success px-3 py-2">Dikembalikan</span>';
-                                                                break;
-                                                            case 'batal':
-                                                                echo '<span class="badge bg-danger px-3 py-2">Batal</span>';
-                                                                break;
-                                                            default:
-                                                                echo '<span class="badge bg-secondary px-3 py-2">' . $row['status'] . '</span>';
+                                                            case 'dipinjam': $badge = 'badge bg-warning text-dark'; break;
+                                                            case 'dikembalikan': $badge = 'badge bg-success'; break;
+                                                            case 'batal': $badge = 'badge bg-danger'; break;
+                                                            default: $badge = 'badge bg-secondary';
                                                         }
                                                         ?>
+                                                        <span class="<?= $badge ?> px-3 py-2"><?= ucfirst($row['status']) ?></span>
                                                     </td>
                                                     <td>
-                                                        <div class="d-flex gap-1 justify-content-center flex-wrap">
-                                                            <a href="show.php?id=<?= $row['id_peminjaman'] ?>" 
-                                                               class="btn btn-sm btn-info text-white" 
-                                                               title="Detail">
+                                                        <div class="d-flex gap-1">
+                                                            <button class="btn btn-sm btn-info text-white" onclick="detailPeminjaman(<?= $row['id_peminjaman'] ?>)" title="Detail">
                                                                 <i class="mdi mdi-eye"></i>
-                                                            </a>
-                                                            <a href="edit.php?id=<?= $row['id_peminjaman'] ?>" 
-                                                               class="btn btn-sm btn-warning" 
-                                                               title="Edit">
-                                                                <i class="mdi mdi-pencil"></i>
-                                                            </a>
-                                                            <button type="button" 
-                                                                    class="btn btn-sm btn-secondary" 
-                                                                    title="Cetak Struk"
-                                                                    onclick="printStruk(<?= $row['id_peminjaman'] ?>)">
-                                                                <i class="mdi mdi-printer"></i>
                                                             </button>
-                                                            <button type="button" 
-                                                                    class="btn btn-sm btn-danger" 
-                                                                    title="Hapus"
-                                                                    data-bs-toggle="modal" 
-                                                                    data-bs-target="#modalHapus<?= $row['id_peminjaman'] ?>">
+                                                            <button class="btn btn-sm btn-warning" onclick="editPeminjaman(<?= $row['id_peminjaman'] ?>)" title="Edit">
+                                                                <i class="mdi mdi-pencil"></i>
+                                                            </button>
+                                                            <button class="btn btn-sm btn-danger" onclick="hapusPeminjaman(<?= $row['id_peminjaman'] ?>, '<?= addslashes($row['nama_barang'] ?? '') ?>')" title="Hapus">
                                                                 <i class="mdi mdi-delete"></i>
                                                             </button>
                                                         </div>
                                                     </td>
                                                 </tr>
-
-                                                <!-- MODAL HAPUS -->
-                                                <div class="modal fade" id="modalHapus<?= $row['id_peminjaman'] ?>" tabindex="-1">
-                                                    <div class="modal-dialog modal-dialog-centered modal-sm">
-                                                        <div class="modal-content">
-                                                            <div class="modal-header bg-danger text-white">
-                                                                <h5 class="modal-title">Hapus Peminjaman</h5>
-                                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                                                            </div>
-                                                            <form action="../../action/peminjaman/destroy.php" method="POST">
-                                                                <div class="modal-body text-center">
-                                                                    <input type="hidden" name="id_peminjaman" value="<?= $row['id_peminjaman'] ?>">
-                                                                    <p>Yakin hapus peminjaman <b>#<?= $row['id_peminjaman'] ?></b>?</p>
-                                                                    <p class="text-muted small">Barang: <?= htmlspecialchars($row['nama_barang'] ?? '-') ?></p>
-                                                                </div>
-                                                                <div class="modal-footer justify-content-center">
-                                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                                                                    <button type="submit" class="btn btn-danger">Hapus</button>
-                                                                </div>
-                                                            </form>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
                                             <?php endwhile; ?>
                                         </tbody>
                                     </table>
@@ -201,117 +151,365 @@ $totalPeminjaman = mysqli_num_rows($data);
                                 <div class="text-center py-5">
                                     <i class="mdi mdi-handshake mdi-48px text-muted mb-3"></i>
                                     <h5>Belum Ada Data Peminjaman</h5>
-                                    <p class="text-muted">Mulai dengan menambahkan peminjaman baru</p>
-                                    <a href="create.php" class="btn btn-gradient-primary mt-2">
-                                        <i class="mdi mdi-plus"></i> Tambah Peminjaman
-                                    </a>
+                                    <button class="btn btn-gradient-primary mt-2" data-bs-toggle="modal" data-bs-target="#modalTambah">Tambah Peminjaman</button>
                                 </div>
                             <?php endif; ?>
-
                         </div>
                     </div>
-
                 </div>
-
-                <?php include '../../partials/footer.php' ?>
-
+                <?php include '../../partials/footer.php'; ?>
             </div>
         </div>
     </div>
 
-    <!-- Modal Cetak Struk -->
-    <div class="modal fade" id="strukModal" tabindex="-1">
+    <!-- ====================== MODAL TAMBAH ====================== -->
+    <div class="modal fade" id="modalTambah" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header bg-gradient-primary text-white">
-                    <h5 class="modal-title">Struk Peminjaman</h5>
+                    <h5 class="modal-title"><i class="mdi mdi-plus"></i> Tambah Peminjaman</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body" id="strukContent"></div>
+                <form id="formTambah" method="POST" action="../../action/peminjaman/store.php">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label>Peminjam</label>
+                            <select name="id_user" class="form-select" required>
+                                <option value="">-- Pilih Peminjam --</option>
+                                <?php foreach($userList as $user): ?>
+                                    <option value="<?= $user['id_user'] ?>"><?= htmlspecialchars($user['username']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label>Barang</label>
+                            <select name="id_barang" id="barang_tambah" class="form-select" required>
+                                <option value="">-- Pilih Barang --</option>
+                                <?php foreach($barangList as $barang): ?>
+                                    <option value="<?= $barang['id_barang'] ?>" data-harga="<?= $barang['harga_per_jam'] ?>">
+                                        <?= htmlspecialchars($barang['nama_barang']) ?> - Rp <?= number_format($barang['harga_per_jam']) ?>/jam
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label>Tanggal Pinjam</label>
+                                <input type="date" name="tanggal_pinjam" id="tgl_tambah" class="form-control" value="<?= date('Y-m-d') ?>" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label>Jam Pinjam</label>
+                                <input type="time" name="jam_pinjam" id="jam_tambah" class="form-control" value="<?= date('H:i') ?>" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label>Durasi Sewa (Jam)</label>
+                            <input type="number" name="durasi_jam" id="durasi_tambah" class="form-control" min="1" value="1" required>
+                        </div>
+                        <div class="alert alert-info" id="previewTambah">
+                            <small><strong>Preview:</strong></small><br>
+                            <small>Tanggal Kembali: <span id="preview_tgl_kembali">-</span></small><br>
+                            <small>Jam Kembali: <span id="preview_jam_kembali">-</span></small><br>
+                            <small>Total Harga: <span id="preview_total">Rp 0</span></small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" name="tombol" class="btn btn-gradient-primary">Simpan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====================== MODAL DETAIL ====================== -->
+    <div class="modal fade" id="modalDetail" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-gradient-info text-white">
+                    <h5 class="modal-title"><i class="mdi mdi-info"></i> Detail Peminjaman</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="detailContent">
+                    <div class="text-center">Loading...</div>
+                </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
-                    <button type="button" class="btn btn-gradient-primary" onclick="window.print()">Cetak</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====================== MODAL EDIT ====================== -->
+    <div class="modal fade" id="modalEdit" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-gradient-warning text-white">
+                    <h5 class="modal-title"><i class="mdi mdi-pencil"></i> Edit Peminjaman</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="formEdit" method="POST" action="">
+                    <div class="modal-body" id="editContent">
+                        <div class="text-center">Loading...</div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" name="tombol" class="btn btn-gradient-primary">Simpan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====================== MODAL HAPUS ====================== -->
+    <div class="modal fade" id="modalHapus" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Hapus Peminjaman</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="formHapus" method="POST" action="../../action/peminjaman/destroy.php">
+                    <div class="modal-body text-center">
+                        <input type="hidden" name="id_peminjaman" id="hapus_id">
+                        <p>Yakin hapus peminjaman <b id="hapus_nama">#</b>?</p>
+                    </div>
+                    <div class="modal-footer justify-content-center">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-danger">Hapus</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
 
     <?php include '../../partials/script.php' ?>
 
-    <!-- DataTables -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
 
     <script>
+        // Data untuk dropdown (dari PHP)
+        const barangList = <?= json_encode($barangList) ?>;
+        const userList = <?= json_encode($userList) ?>;
+
         $(document).ready(function() {
+            // Inisialisasi DataTable
+            if ($.fn.DataTable.isDataTable('#tablePeminjaman')) {
+                $('#tablePeminjaman').DataTable().destroy();
+            }
+            
             $('#tablePeminjaman').DataTable({
-                language: {
-                    processing: "Memproses...",
-                    search: "Cari:",
-                    lengthMenu: "Tampilkan _MENU_ data",
+                language: { 
+                    search: "Cari:", 
+                    lengthMenu: "Tampilkan _MENU_ data", 
                     info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
-                    paginate: { previous: "<", next: ">" }
+                    emptyTable: "Tidak ada data peminjaman",
+                    zeroRecords: "Data tidak ditemukan"
                 },
                 pageLength: 10,
-                order: [[1, 'desc']]
+                order: [[1, 'desc']],
+                columnDefs: [
+                    { orderable: false, targets: [0, 11] }
+                ]
             });
+
+            // Preview di modal tambah
+            function updatePreviewTambah() {
+                const barang = $('#barang_tambah option:selected').data('harga');
+                const durasi = parseInt($('#durasi_tambah').val()) || 0;
+                const tglPinjam = $('#tgl_tambah').val();
+                const jamPinjam = $('#jam_tambah').val();
+
+                if (barang && durasi > 0) {
+                    $('#preview_total').text('Rp ' + (barang * durasi).toLocaleString('id-ID'));
+                } else {
+                    $('#preview_total').text('Rp 0');
+                }
+
+                if (tglPinjam && jamPinjam && durasi > 0) {
+                    let date = new Date(tglPinjam + 'T' + jamPinjam);
+                    date.setHours(date.getHours() + durasi);
+                    $('#preview_tgl_kembali').text(date.toLocaleDateString('id-ID'));
+                    $('#preview_jam_kembali').text(date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }));
+                } else {
+                    $('#preview_tgl_kembali').text('-');
+                    $('#preview_jam_kembali').text('-');
+                }
+            }
+
+            $('#barang_tambah, #durasi_tambah, #tgl_tambah, #jam_tambah').on('change input', updatePreviewTambah);
+            updatePreviewTambah();
         });
 
-        function printStruk(id) {
+        function detailPeminjaman(id) {
+            $('#modalDetail').modal('show');
+            $('#detailContent').html('<div class="text-center">Loading...</div>');
             $.ajax({
-                url: '../../action/peminjaman/print_struk.php',
+                url: '../../action/peminjaman/get_detail.php',
                 type: 'GET',
                 data: { id: id },
                 dataType: 'json',
                 success: function(data) {
                     if (data.success) {
+                        let statusClass = data.status == 'dipinjam' ? 'warning' : (data.status == 'dikembalikan' ? 'success' : 'danger');
                         let html = `
-                            <div style="font-family: monospace; max-width: 400px; margin:0 auto;">
-                                <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:10px;">
-                                    <h4>PEMINJAMAN ALAT BERAT</h4>
-                                    <div>Jl. Contoh No. 123, Kota</div>
-                                    <div>No. Transaksi: #${data.id_peminjaman}</div>
-                                    <div>Tanggal: ${data.tanggal_transaksi}</div>
-                                </div>
-                                <div style="margin:15px 0">
-                                    <div>ID User: ${data.id_user}</div>
-                                    <div>Barang: ${data.nama_barang}</div>
-                                </div>
-                                <div style="border-top:1px dashed #000; margin:10px 0"></div>
-                                <div>Tgl Pinjam: ${data.tanggal_pinjam} ${data.jam_pinjam}</div>
-                                <div>Tgl Kembali: ${data.tanggal_kembali || '-'} ${data.jam_kembali || '-'}</div>
-                                <div>Durasi: ${data.durasi_jam} Jam</div>
-                                <div style="border-top:1px dashed #000; margin:10px 0"></div>
-                                <div>Harga/Jam: Rp ${data.harga_per_jam}</div>
-                                <div style="font-size:18px; font-weight:bold; margin-top:10px">TOTAL: Rp ${data.total_harga}</div>
-                                <div style="border-top:1px dashed #000; margin:10px 0"></div>
-                                <div>Status: ${data.status}</div>
-                                <div style="text-align:center; margin-top:20px; font-size:12px">Terima kasih</div>
+                            <div class="info-detail">
+                                <table class="table table-borderless">
+                                    <tr><td width="120"><strong>ID Peminjaman</strong></td><td>: #${data.id_peminjaman}</td></tr>
+                                    <tr><td><strong>Peminjam</strong></td><td>: ${data.username || 'User #'+data.id_user}</td></tr>
+                                    <tr><td><strong>Barang</strong></td><td>: ${data.nama_barang}</td></tr>
+                                    <tr><td><strong>Tanggal Pinjam</strong></td><td>: ${data.tanggal_pinjam}</td></tr>
+                                    <tr><td><strong>Jam Pinjam</strong></td><td>: ${data.jam_pinjam}</td></tr>
+                                    <tr><td><strong>Tanggal Kembali</strong></td><td>: ${data.tanggal_kembali || '-'}</td></tr>
+                                    <tr><td><strong>Jam Kembali</strong></td><td>: ${data.jam_kembali || '-'}</td></tr>
+                                    <tr><td><strong>Durasi</strong></td><td>: ${data.durasi_jam} jam</td></tr>
+                                    <tr><td><strong>Total Harga</strong></td><td>: Rp ${data.total_harga}</td></tr>
+                                    <tr><td><strong>Status</strong></td><td>: <span class="badge bg-${statusClass}">${data.status}</span></td></tr>
+                                    <tr><td><strong>Dibuat</strong></td><td>: ${data.created_at}</td></tr>
+                                </table>
                             </div>
                         `;
-                        $('#strukContent').html(html);
-                        $('#strukModal').modal('show');
+                        $('#detailContent').html(html);
                     } else {
-                        alert(data.message);
+                        $('#detailContent').html('<div class="text-danger">Gagal mengambil data</div>');
                     }
                 },
                 error: function() {
-                    alert('Gagal mengambil data');
+                    $('#detailContent').html('<div class="text-danger">Error mengambil data</div>');
                 }
             });
+        }
+
+        function editPeminjaman(id) {
+            $('#modalEdit').modal('show');
+            $('#editContent').html('<div class="text-center">Loading...</div>');
+            
+            $.ajax({
+                url: '../../action/peminjaman/get_edit.php',
+                type: 'GET',
+                data: { id: id },
+                dataType: 'json',
+                success: function(data) {
+                    if (data.success) {
+                        // Buat option barang
+                        let barangOptions = '<option value="">-- Pilih Barang --</option>';
+                        for(let i = 0; i < barangList.length; i++) {
+                            let selected = (barangList[i].id_barang == data.id_barang) ? 'selected' : '';
+                            barangOptions += `<option value="${barangList[i].id_barang}" data-harga="${barangList[i].harga_per_jam}" ${selected}>${barangList[i].nama_barang} - Rp ${new Intl.NumberFormat('id-ID').format(barangList[i].harga_per_jam)}/jam</option>`;
+                        }
+                        
+                        // Buat option user
+                        let userOptions = '<option value="">-- Pilih Peminjam --</option>';
+                        for(let i = 0; i < userList.length; i++) {
+                            let selected = (userList[i].id_user == data.id_user) ? 'selected' : '';
+                            userOptions += `<option value="${userList[i].id_user}" ${selected}>${userList[i].username}</option>`;
+                        }
+                        
+                        let html = `
+                            <input type="hidden" name="id_peminjaman" value="${data.id_peminjaman}">
+                            <div class="mb-3">
+                                <label>Peminjam</label>
+                                <select name="id_user" id="user_edit" class="form-select" required>
+                                    ${userOptions}
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label>Barang</label>
+                                <select name="id_barang" id="barang_edit" class="form-select" required>
+                                    ${barangOptions}
+                                </select>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label>Tanggal Pinjam</label>
+                                    <input type="date" name="tanggal_pinjam" id="tgl_edit" class="form-control" value="${data.tanggal_pinjam}" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label>Jam Pinjam</label>
+                                    <input type="time" name="jam_pinjam" id="jam_edit" class="form-control" value="${data.jam_pinjam}" required>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label>Durasi Sewa (Jam)</label>
+                                <input type="number" name="durasi_jam" id="durasi_edit" class="form-control" min="1" value="${data.durasi_jam}" required>
+                            </div>
+                            <div class="mb-3">
+                                <label>Status</label>
+                                <select name="status" class="form-select" required>
+                                    <option value="dipinjam" ${data.status == 'dipinjam' ? 'selected' : ''}>Dipinjam</option>
+                                    <option value="dikembalikan" ${data.status == 'dikembalikan' ? 'selected' : ''}>Dikembalikan</option>
+                                    <option value="batal" ${data.status == 'batal' ? 'selected' : ''}>Batal</option>
+                                </select>
+                            </div>
+                            <div class="alert alert-info" id="previewEdit">
+                                <small><strong>Preview:</strong></small><br>
+                                <small>Tanggal Kembali: <span id="preview_tgl_edit">-</span></small><br>
+                                <small>Jam Kembali: <span id="preview_jam_edit">-</span></small><br>
+                                <small>Total Harga: <span id="preview_total_edit">Rp 0</span></small>
+                            </div>
+                        `;
+                        $('#editContent').html(html);
+                        $('#formEdit').attr('action', `../../action/peminjaman/update.php?id=${data.id_peminjaman}`);
+                        
+                        window.editHargaPerJam = data.harga_per_jam;
+                        updatePreviewEdit();
+                        
+                        $('#barang_edit, #durasi_edit, #tgl_edit, #jam_edit').on('change input', updatePreviewEdit);
+                    } else {
+                        $('#editContent').html('<div class="text-danger">Gagal mengambil data</div>');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.log(error);
+                    $('#editContent').html('<div class="text-danger">Error mengambil data: ' + error + '</div>');
+                }
+            });
+        }
+
+        function updatePreviewEdit() {
+            const selectedOption = $('#barang_edit option:selected');
+            let harga = selectedOption.data('harga');
+            if (!harga && window.editHargaPerJam) {
+                harga = window.editHargaPerJam;
+            }
+            const durasi = parseInt($('#durasi_edit').val()) || 0;
+            const tglPinjam = $('#tgl_edit').val();
+            const jamPinjam = $('#jam_edit').val();
+
+            if (harga && durasi > 0) {
+                $('#preview_total_edit').text('Rp ' + (harga * durasi).toLocaleString('id-ID'));
+            } else {
+                $('#preview_total_edit').text('Rp 0');
+            }
+
+            if (tglPinjam && jamPinjam && durasi > 0) {
+                let date = new Date(tglPinjam + 'T' + jamPinjam);
+                date.setHours(date.getHours() + durasi);
+                $('#preview_tgl_edit').text(date.toLocaleDateString('id-ID'));
+                $('#preview_jam_edit').text(date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }));
+            } else {
+                $('#preview_tgl_edit').text('-');
+                $('#preview_jam_edit').text('-');
+            }
+        }
+
+        function hapusPeminjaman(id, nama) {
+            $('#hapus_id').val(id);
+            $('#hapus_nama').text('#' + id + ' - ' + nama);
+            $('#modalHapus').modal('show');
         }
     </script>
 
     <style>
-        .badge { font-size:0.75rem; padding:0.35rem 0.65rem; border-radius:30px; }
-        @media print {
-            .navbar, .sidebar, .page-header, .card-header, .alert, .dataTables_filter, 
-            .dataTables_length, .dataTables_paginate, .modal-footer, .btn, .modal-header {
-                display: none !important;
-            }
-            .modal-content { border: none; }
-            .modal-body { padding: 0; }
+        .info-detail table tr td { padding: 5px 0; }
+        .modal-header .btn-close { filter: brightness(0) invert(1); }
+        .dataTables_wrapper .dataTables_length, 
+        .dataTables_wrapper .dataTables_filter,
+        .dataTables_wrapper .dataTables_info,
+        .dataTables_wrapper .dataTables_paginate {
+            margin-bottom: 15px;
         }
     </style>
 
