@@ -548,7 +548,7 @@ while ($user = mysqli_fetch_assoc($queryUsers)) {
                             <div class="struk-wrapper" id="strukPrint">
                                 <div class="struk-container">
                                     <div class="struk-header">
-                                        <div class="struk-title">PEMINJAMAN ALAT BERAT</div>
+                                        <div class="struk-title">PEMINJAMAN LAMPU</div>
                                         <div class="struk-address">Jl. Contoh No. 123, Kota</div>
                                         <div class="struk-phone">Telp: (021) 1234567</div>
                                         <div class="struk-divider"></div>
