@@ -11,9 +11,7 @@ if (!isset($_SESSION['id_user'])) {
 
 /* ===============================
    AMBIL DATA PEMINJAMAN
-   JOIN dengan tabel user (cek dulu nama tabel user nya)
 ================================ */
-// SEMENTARA PAKAI INI DULU (tanpa JOIN user)
 $query = "SELECT 
             p.*,
             b.nama_barang,
@@ -120,35 +118,28 @@ $totalPeminjaman = mysqli_num_rows($data);
                                                     <td><?= $row['id_peminjaman'] ?></td>
                                                     <td><?= $row['id_user'] ?></td>
                                                     <td><?= htmlspecialchars($row['nama_barang'] ?? '-') ?></td>
-                                                    <td><?= $row['tanggal_pinjaman'] ? date('d-m-Y', strtotime($row['tanggal_pinjaman'])) : '-' ?></td>
-                                                    <td><?= $row['jam_pinjaman'] ?? '-' ?></td>
+                                                    <td><?= $row['tanggal_pinjam'] ? date('d-m-Y', strtotime($row['tanggal_pinjam'])) : '-' ?></td>
+                                                    <td><?= $row['jam_pinjam'] ?? '-' ?></td>
                                                     <td><?= $row['tanggal_kembali'] ? date('d-m-Y', strtotime($row['tanggal_kembali'])) : '-' ?></td>
                                                     <td><?= $row['jam_kembali'] ?? '-' ?></td>
                                                     <td><?= $row['durasi_jam'] ?> jam</td>
                                                     <td>Rp <?= number_format($row['total_harga'], 0, ',', '.') ?></td>
                                                     <td>
                                                         <?php 
-                                                        $statusClass = '';
-                                                        $statusText = '';
                                                         switch($row['status']) {
                                                             case 'dipinjam':
-                                                                $statusClass = 'badge bg-warning text-dark';
-                                                                $statusText = 'Dipinjam';
+                                                                echo '<span class="badge bg-warning text-dark px-3 py-2">Dipinjam</span>';
                                                                 break;
                                                             case 'dikembalikan':
-                                                                $statusClass = 'badge bg-success';
-                                                                $statusText = 'Dikembalikan';
+                                                                echo '<span class="badge bg-success px-3 py-2">Dikembalikan</span>';
                                                                 break;
                                                             case 'batal':
-                                                                $statusClass = 'badge bg-danger';
-                                                                $statusText = 'Batal';
+                                                                echo '<span class="badge bg-danger px-3 py-2">Batal</span>';
                                                                 break;
                                                             default:
-                                                                $statusClass = 'badge bg-secondary';
-                                                                $statusText = $row['status'];
+                                                                echo '<span class="badge bg-secondary px-3 py-2">' . $row['status'] . '</span>';
                                                         }
                                                         ?>
-                                                        <span class="<?= $statusClass ?> px-3 py-2"><?= $statusText ?></span>
                                                     </td>
                                                     <td>
                                                         <div class="d-flex gap-1 justify-content-center flex-wrap">
@@ -288,7 +279,7 @@ $totalPeminjaman = mysqli_num_rows($data);
                                     <div>Barang: ${data.nama_barang}</div>
                                 </div>
                                 <div style="border-top:1px dashed #000; margin:10px 0"></div>
-                                <div>Tgl Pinjam: ${data.tanggal_pinjaman} ${data.jam_pinjaman}</div>
+                                <div>Tgl Pinjam: ${data.tanggal_pinjam} ${data.jam_pinjam}</div>
                                 <div>Tgl Kembali: ${data.tanggal_kembali || '-'} ${data.jam_kembali || '-'}</div>
                                 <div>Durasi: ${data.durasi_jam} Jam</div>
                                 <div style="border-top:1px dashed #000; margin:10px 0"></div>
