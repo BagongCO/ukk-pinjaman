@@ -32,7 +32,7 @@ while ($barang = mysqli_fetch_assoc($queryBarang)) {
     $barangList[] = $barang;
 }
 
-// Ambil data users untuk dropdown (opsional, tapi lebih baik)
+// Ambil data users untuk dropdown
 $queryUsers = mysqli_query($connect, "SELECT id_user, username FROM users ORDER BY username");
 $userList = [];
 while ($user = mysqli_fetch_assoc($queryUsers)) {
@@ -100,7 +100,7 @@ while ($user = mysqli_fetch_assoc($queryUsers)) {
                                                 <th>Durasi</th>
                                                 <th>Total Harga</th>
                                                 <th>Status</th>
-                                                <th width="150">Aksi</th>
+                                                <th width="180">Aksi</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -130,12 +130,15 @@ while ($user = mysqli_fetch_assoc($queryUsers)) {
                                                         <span class="<?= $badge ?> px-3 py-2"><?= ucfirst($row['status']) ?></span>
                                                     </td>
                                                     <td>
-                                                        <div class="d-flex gap-1">
+                                                        <div class="d-flex gap-1 flex-wrap">
                                                             <button class="btn btn-sm btn-info text-white" onclick="detailPeminjaman(<?= $row['id_peminjaman'] ?>)" title="Detail">
                                                                 <i class="mdi mdi-eye"></i>
                                                             </button>
                                                             <button class="btn btn-sm btn-warning" onclick="editPeminjaman(<?= $row['id_peminjaman'] ?>)" title="Edit">
                                                                 <i class="mdi mdi-pencil"></i>
+                                                            </button>
+                                                            <button class="btn btn-sm btn-secondary" onclick="cetakStruk(<?= $row['id_peminjaman'] ?>)" title="Cetak Struk">
+                                                                <i class="mdi mdi-printer"></i>
                                                             </button>
                                                             <button class="btn btn-sm btn-danger" onclick="hapusPeminjaman(<?= $row['id_peminjaman'] ?>, '<?= addslashes($row['nama_barang'] ?? '') ?>')" title="Hapus">
                                                                 <i class="mdi mdi-delete"></i>
@@ -279,6 +282,27 @@ while ($user = mysqli_fetch_assoc($queryUsers)) {
                         <button type="submit" class="btn btn-danger">Hapus</button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====================== MODAL STRUK ====================== -->
+    <div class="modal fade" id="modalStruk" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-gradient-primary text-white">
+                    <h5 class="modal-title"><i class="mdi mdi-receipt"></i> Struk Peminjaman</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0" id="strukContent">
+                    <div class="text-center p-4">Loading...</div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                    <button type="button" class="btn btn-gradient-primary" onclick="printStruk()">
+                        <i class="mdi mdi-printer"></i> Cetak
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -500,6 +524,122 @@ while ($user = mysqli_fetch_assoc($queryUsers)) {
             $('#hapus_nama').text('#' + id + ' - ' + nama);
             $('#modalHapus').modal('show');
         }
+
+        // ====================== FUNGSI CETAK STRUK ======================
+        let currentStrukData = null;
+
+        function cetakStruk(id) {
+            $('#modalStruk').modal('show');
+            $('#strukContent').html('<div class="text-center p-4">Loading...</div>');
+            
+            $.ajax({
+                url: '../../action/peminjaman/get_struk.php',
+                type: 'GET',
+                data: { id: id },
+                dataType: 'json',
+                success: function(data) {
+                    if (data.success) {
+                        currentStrukData = data;
+                        
+                        let statusClass = data.status == 'dipinjam' ? 'warning' : (data.status == 'dikembalikan' ? 'success' : 'danger');
+                        let statusText = data.status == 'dipinjam' ? 'Dipinjam' : (data.status == 'dikembalikan' ? 'Dikembalikan' : 'Batal');
+                        
+                        let html = `
+                            <div class="struk-wrapper" id="strukPrint">
+                                <div class="struk-container">
+                                    <div class="struk-header">
+                                        <div class="struk-title">PEMINJAMAN ALAT BERAT</div>
+                                        <div class="struk-address">Jl. Contoh No. 123, Kota</div>
+                                        <div class="struk-phone">Telp: (021) 1234567</div>
+                                        <div class="struk-divider"></div>
+                                        <div class="struk-transaksi">No. Transaksi: #${data.id_peminjaman}</div>
+                                        <div class="struk-date">Tanggal: ${data.tanggal_transaksi}</div>
+                                    </div>
+                                    
+                                    <div class="struk-body">
+                                        <div class="struk-row">
+                                            <span class="struk-label">Peminjam:</span>
+                                            <span class="struk-value"><strong>${data.username || 'User #'+data.id_user}</strong></span>
+                                        </div>
+                                        <div class="struk-row">
+                                            <span class="struk-label">Barang:</span>
+                                            <span class="struk-value"><strong>${data.nama_barang}</strong></span>
+                                        </div>
+                                        <div class="struk-divider"></div>
+                                        
+                                        <div class="struk-row">
+                                            <span class="struk-label">Tanggal Pinjam:</span>
+                                            <span class="struk-value">${data.tanggal_pinjam}</span>
+                                        </div>
+                                        <div class="struk-row">
+                                            <span class="struk-label">Jam Pinjam:</span>
+                                            <span class="struk-value">${data.jam_pinjam}</span>
+                                        </div>
+                                        <div class="struk-row">
+                                            <span class="struk-label">Tanggal Kembali:</span>
+                                            <span class="struk-value">${data.tanggal_kembali || '-'}</span>
+                                        </div>
+                                        <div class="struk-row">
+                                            <span class="struk-label">Jam Kembali:</span>
+                                            <span class="struk-value">${data.jam_kembali || '-'}</span>
+                                        </div>
+                                        <div class="struk-row">
+                                            <span class="struk-label">Durasi Sewa:</span>
+                                            <span class="struk-value">${data.durasi_jam} Jam</span>
+                                        </div>
+                                        <div class="struk-divider"></div>
+                                        
+                                        <div class="struk-row">
+                                            <span class="struk-label">Harga per Jam:</span>
+                                            <span class="struk-value">Rp ${data.harga_per_jam}</span>
+                                        </div>
+                                        <div class="struk-row struk-total">
+                                            <span class="struk-label">TOTAL HARGA:</span>
+                                            <span class="struk-value">Rp ${data.total_harga}</span>
+                                        </div>
+                                        <div class="struk-divider"></div>
+                                        
+                                        <div class="struk-row">
+                                            <span class="struk-label">Status:</span>
+                                            <span class="struk-value"><strong class="text-${statusClass}">${statusText}</strong></span>
+                                        </div>
+                                        
+                                        ${data.denda > 0 ? `
+                                        <div class="struk-row struk-denda">
+                                            <span class="struk-label">Denda:</span>
+                                            <span class="struk-value">Rp ${data.denda}</span>
+                                        </div>
+                                        ` : ''}
+                                    </div>
+                                    
+                                    <div class="struk-footer">
+                                        <div>Terima kasih atas kepercayaan Anda</div>
+                                        <div>Barang wajib dikembalikan tepat waktu</div>
+                                        <div class="struk-thanks">--- Simpan struk ini sebagai bukti ---</div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        $('#strukContent').html(html);
+                    } else {
+                        $('#strukContent').html('<div class="text-center p-4 text-danger">Gagal mengambil data struk</div>');
+                    }
+                },
+                error: function() {
+                    $('#strukContent').html('<div class="text-center p-4 text-danger">Error mengambil data</div>');
+                }
+            });
+        }
+
+        function printStruk() {
+            let printContents = document.getElementById('strukPrint').innerHTML;
+            let originalContents = document.body.innerHTML;
+            
+            document.body.innerHTML = printContents;
+            window.print();
+            document.body.innerHTML = originalContents;
+            location.reload();
+        }
     </script>
 
     <style>
@@ -510,6 +650,93 @@ while ($user = mysqli_fetch_assoc($queryUsers)) {
         .dataTables_wrapper .dataTables_info,
         .dataTables_wrapper .dataTables_paginate {
             margin-bottom: 15px;
+        }
+        
+        /* Style untuk struk */
+        .struk-container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: white;
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+        }
+        .struk-header {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .struk-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .struk-address, .struk-phone {
+            font-size: 11px;
+            color: #666;
+        }
+        .struk-divider {
+            border-top: 1px dashed #000;
+            margin: 10px 0;
+        }
+        .struk-transaksi, .struk-date {
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        .struk-body {
+            margin: 15px 0;
+        }
+        .struk-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+        .struk-label {
+            font-weight: normal;
+        }
+        .struk-value {
+            font-weight: normal;
+        }
+        .struk-total {
+            font-weight: bold;
+            font-size: 14px;
+            border-top: 1px solid #000;
+            padding-top: 10px;
+            margin-top: 10px;
+        }
+        .struk-denda {
+            color: red;
+            font-weight: bold;
+        }
+        .struk-footer {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 10px;
+            border-top: 1px dashed #000;
+            font-size: 10px;
+        }
+        .struk-thanks {
+            margin-top: 5px;
+            font-size: 9px;
+        }
+        
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            .struk-wrapper, .struk-wrapper * {
+                visibility: visible;
+            }
+            .struk-wrapper {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                margin: 0;
+                padding: 20px;
+            }
+            .modal-open .modal {
+                display: none !important;
+            }
         }
     </style>
 
