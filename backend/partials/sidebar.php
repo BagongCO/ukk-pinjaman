@@ -322,8 +322,8 @@ function isActive($keyword)
                 </a>
             </li>
 
-            <li class="nav-item <?= isActive('data_peminjaman') ?>">
-                <a class="nav-link" href="../data_peminjaman/index.php">
+            <li class="nav-item <?= isActive('peminjaman') ?>">
+                <a class="nav-link" href="../peminjaman/index.php">
                     <i class="mdi mdi-clipboard-list"></i>
                     <span>Peminjaman</span>
                 </a>
