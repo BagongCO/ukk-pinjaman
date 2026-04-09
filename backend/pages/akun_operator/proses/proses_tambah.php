@@ -15,7 +15,7 @@ if (!isset($_SESSION['id_user'])) {
 $nama = escapeString($_POST['nama']);
 $username = escapeString($_POST['username']);
 $password = $_POST['password'];
-$id_role = intval($_POST['id_role']);
+$id_role = intval($_POST['id_role']); // 1=admin, 2=petugas, 3=peminjam
 
 /* ===============================
    VALIDASI INPUT
@@ -30,7 +30,6 @@ if ($nama == "" || $username == "" || $password == "" || $id_role == "") {
    CEK USERNAME DUPLIKAT
 ================================ */
 $cek = mysqli_query($connect, "SELECT id_user FROM users WHERE username='$username'");
-
 if (mysqli_num_rows($cek) > 0) {
     $_SESSION['error'] = "Username sudah digunakan!";
     header("Location: ../index.php");
@@ -51,20 +50,19 @@ $query = mysqli_query($connect, "
 ");
 
 if ($query) {
-
     /* ===============================
        LOG AKTIVITAS
     ================================ */
     mysqli_query($connect, "
-        INSERT INTO log_aktivitas (id_user, username, role, aktivitas)
-        VALUES ('{$_SESSION['id_user']}','{$_SESSION['username']}','{$_SESSION['role']}','Menambahkan akun operator')
+        INSERT INTO log_aktivitas (id_user, username, role, aktivitas, waktu)
+        VALUES ('{$_SESSION['id_user']}', '{$_SESSION['username']}', '{$_SESSION['role']}', 'Menambahkan akun dengan role id=$id_role', NOW())
     ");
 
     $_SESSION['success'] = "Akun berhasil ditambahkan";
 } else {
-
     $_SESSION['error'] = "Gagal menambahkan akun : " . mysqli_error($connect);
 }
 
 header("Location: ../index.php");
 exit;
+?>

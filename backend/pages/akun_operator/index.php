@@ -18,13 +18,13 @@ if ($_SESSION['role'] != 'admin') {
 }
 
 /* ===============================
-   AMBIL DATA OPERATOR
+   AMBIL DATA USER (SEMUA ROLE)
 ================================ */
 $data = mysqli_query($connect, "
     SELECT users.*, roles.nama_role
     FROM users 
     JOIN roles ON users.id_role = roles.id_role
-    WHERE roles.nama_role IN ('admin','petugas')
+    ORDER BY users.id_role ASC, users.nama ASC
 ");
 
 if (!$data) {
@@ -36,13 +36,9 @@ if (!$data) {
 
 <body>
     <div class="container-scroller">
-
         <?php include '../../partials/navbar.php' ?>
-
         <div class="container-fluid page-body-wrapper">
-
             <?php include '../../partials/sidebar.php' ?>
-
             <div class="main-panel">
                 <div class="content-wrapper">
 
@@ -52,7 +48,7 @@ if (!$data) {
                             <span class="page-title-icon bg-gradient-primary text-white me-2">
                                 <i class="mdi mdi-account-multiple"></i>
                             </span>
-                            Data Akun Operator
+                            Data Akun (Admin, Petugas, Peminjam)
                         </h3>
                     </div>
 
@@ -73,30 +69,18 @@ if (!$data) {
                     <?php unset($_SESSION['error']);
                     endif; ?>
 
-
                     <div class="card">
                         <div class="card-body">
-
                             <div class="d-flex justify-content-between mb-3">
-
-                                <h4 class="card-title">Daftar Akun Admin & Petugas</h4>
-
-                                <button class="btn btn-gradient-primary"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#modalTambah">
-
+                                <h4 class="card-title">Daftar Semua Akun</h4>
+                                <button class="btn btn-gradient-primary" data-bs-toggle="modal" data-bs-target="#modalTambah">
                                     + Tambah Akun
-
                                 </button>
-
                             </div>
 
                             <div class="table-responsive">
-
-                                <table class="table table-bordered table-striped">
-
+                                <table class="table table-bordered table-striped" id="tableAkun">
                                     <thead class="table-light">
-
                                         <tr>
                                             <th width="50">No</th>
                                             <th>Nama</th>
@@ -104,282 +88,170 @@ if (!$data) {
                                             <th>Role</th>
                                             <th width="150">Aksi</th>
                                         </tr>
-
                                     </thead>
-
                                     <tbody>
-
                                         <?php $no = 1; ?>
                                         <?php while ($row = mysqli_fetch_assoc($data)): ?>
-
                                             <tr>
-
                                                 <td><?= $no++ ?></td>
-
                                                 <td><?= htmlspecialchars($row['nama']) ?></td>
-
                                                 <td><?= htmlspecialchars($row['username']) ?></td>
-
                                                 <td>
-
-                                                    <?php if ($row['nama_role'] == 'admin'): ?>
-
+                                                    <?php 
+                                                    $role = $row['nama_role'];
+                                                    if ($role == 'admin'): ?>
                                                         <span class="badge bg-gradient-primary">Admin</span>
-
-                                                    <?php else: ?>
-
+                                                    <?php elseif ($role == 'petugas'): ?>
                                                         <span class="badge bg-success">Petugas</span>
-
+                                                    <?php elseif ($role == 'peminjam'): ?>
+                                                        <span class="badge bg-info text-dark">Peminjam</span>
+                                                    <?php else: ?>
+                                                        <span class="badge bg-secondary"><?= $role ?></span>
                                                     <?php endif; ?>
-
                                                 </td>
-
                                                 <td>
-
                                                     <button class="btn btn-sm btn-warning"
                                                         data-bs-toggle="modal"
                                                         data-bs-target="#modalEdit<?= $row['id_user'] ?>">
-
                                                         Edit
-
                                                     </button>
-
                                                     <button class="btn btn-sm btn-danger"
                                                         data-bs-toggle="modal"
                                                         data-bs-target="#modalHapus<?= $row['id_user'] ?>">
-
                                                         Hapus
-
                                                     </button>
-
                                                 </td>
-
                                             </tr>
 
-
-                                            <!-- =============================
-MODAL EDIT
-============================= -->
-
+                                            <!-- MODAL EDIT -->
                                             <div class="modal fade" id="modalEdit<?= $row['id_user'] ?>">
-
                                                 <div class="modal-dialog modal-dialog-centered">
-
                                                     <div class="modal-content">
-
                                                         <div class="modal-header bg-warning text-white">
-
                                                             <h5 class="modal-title">Edit Akun</h5>
-
                                                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-
                                                         </div>
-
                                                         <form method="POST" action="proses/proses_edit.php">
-
                                                             <input type="hidden" name="id_user" value="<?= $row['id_user'] ?>">
-
                                                             <div class="modal-body">
-
                                                                 <div class="mb-3">
-
                                                                     <label>Nama</label>
-
-                                                                    <input type="text"
-                                                                        name="nama"
-                                                                        value="<?= htmlspecialchars($row['nama']) ?>"
-                                                                        class="form-control"
-                                                                        required>
-
+                                                                    <input type="text" name="nama" value="<?= htmlspecialchars($row['nama']) ?>" class="form-control" required>
                                                                 </div>
-
                                                                 <div class="mb-3">
-
                                                                     <label>Username</label>
-
-                                                                    <input type="text"
-                                                                        name="username"
-                                                                        value="<?= htmlspecialchars($row['username']) ?>"
-                                                                        class="form-control"
-                                                                        required>
-
+                                                                    <input type="text" name="username" value="<?= htmlspecialchars($row['username']) ?>" class="form-control" required>
                                                                 </div>
                                                                 <div class="mb-3">
                                                                     <label>Password (Kosongkan jika tidak diubah)</label>
-                                                                    <input type="password"
-                                                                        name="password"
-                                                                        class="form-control"
-                                                                        placeholder="Isi jika ingin mengganti password">
+                                                                    <input type="password" name="password" class="form-control" placeholder="Isi jika ingin mengganti password">
                                                                 </div>
-
                                                                 <div class="mb-3">
-
                                                                     <label>Role</label>
-
                                                                     <select name="id_role" class="form-control">
-
                                                                         <option value="1" <?= $row['id_role'] == 1 ? 'selected' : '' ?>>Admin</option>
-
                                                                         <option value="2" <?= $row['id_role'] == 2 ? 'selected' : '' ?>>Petugas</option>
-
+                                                                        <option value="3" <?= $row['id_role'] == 3 ? 'selected' : '' ?>>Peminjam</option>
                                                                     </select>
-
                                                                 </div>
-
                                                             </div>
-
                                                             <div class="modal-footer">
-
                                                                 <button class="btn btn-warning">Update</button>
-
                                                             </div>
-
                                                         </form>
-
                                                     </div>
                                                 </div>
                                             </div>
 
-
-
-                                            <!-- =============================
-MODAL HAPUS
-============================= -->
-
+                                            <!-- MODAL HAPUS -->
                                             <div class="modal fade" id="modalHapus<?= $row['id_user'] ?>">
-
                                                 <div class="modal-dialog modal-dialog-centered">
-
                                                     <div class="modal-content">
-
                                                         <div class="modal-header bg-danger text-white">
-
                                                             <h5 class="modal-title">Hapus Akun</h5>
-
                                                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-
                                                         </div>
-
                                                         <form method="POST" action="proses/proses_hapus.php">
-
                                                             <input type="hidden" name="id_user" value="<?= $row['id_user'] ?>">
-
                                                             <div class="modal-body">
-
-                                                                Yakin ingin menghapus akun
-                                                                <b><?= htmlspecialchars($row['nama']) ?></b> ?
-
+                                                                Yakin ingin menghapus akun <b><?= htmlspecialchars($row['nama']) ?></b> ?
                                                             </div>
-
                                                             <div class="modal-footer">
-
                                                                 <button class="btn btn-danger">Hapus</button>
-
                                                             </div>
-
                                                         </form>
-
                                                     </div>
                                                 </div>
                                             </div>
 
                                         <?php endwhile; ?>
-
                                     </tbody>
-
                                 </table>
-
                             </div>
                         </div>
                     </div>
 
-
-                    <!-- =============================
-MODAL TAMBAH
-============================= -->
-
+                    <!-- MODAL TAMBAH -->
                     <div class="modal fade" id="modalTambah">
-
                         <div class="modal-dialog modal-dialog-centered">
-
                             <div class="modal-content">
-
                                 <div class="modal-header bg-primary text-white">
-
                                     <h5 class="modal-title">Tambah Akun</h5>
-
                                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-
                                 </div>
-
                                 <form method="POST" action="proses/proses_tambah.php">
-
                                     <div class="modal-body">
-
                                         <div class="mb-3">
-
                                             <label>Nama</label>
-
                                             <input type="text" name="nama" class="form-control" required>
-
                                         </div>
-
                                         <div class="mb-3">
-
                                             <label>Username</label>
-
                                             <input type="text" name="username" class="form-control" required>
-
                                         </div>
-
                                         <div class="mb-3">
-
                                             <label>Password</label>
-
                                             <input type="password" name="password" class="form-control" required>
-
                                         </div>
-
                                         <div class="mb-3">
-
                                             <label>Role</label>
-
                                             <select name="id_role" class="form-control" required>
-
                                                 <option value="">-- Pilih Role --</option>
                                                 <option value="1">Admin</option>
                                                 <option value="2">Petugas</option>
-
+                                                <option value="3">Peminjam</option>
                                             </select>
-
                                         </div>
-
                                     </div>
-
                                     <div class="modal-footer">
-
                                         <button class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-
                                         <button class="btn btn-primary">Simpan</button>
-
                                     </div>
-
                                 </form>
-
                             </div>
                         </div>
                     </div>
 
                 </div>
-
                 <?php include '../../partials/footer.php' ?>
-
             </div>
         </div>
     </div>
 
     <?php include '../../partials/script.php' ?>
 
+    <!-- Optional: DataTable untuk pencarian/sortir -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('#tableAkun').DataTable({
+                language: { search: "Cari:", lengthMenu: "Tampilkan _MENU_ data", info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data" },
+                pageLength: 10,
+                order: [[3, 'asc']]
+            });
+        });
+    </script>
 </body>
-
 </html>

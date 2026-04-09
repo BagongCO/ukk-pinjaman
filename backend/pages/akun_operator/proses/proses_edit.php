@@ -7,17 +7,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $nama = mysqli_real_escape_string($connect, $_POST['nama']);
     $username = mysqli_real_escape_string($connect, $_POST['username']);
     $password = $_POST['password'];
-    $id_role = $_POST['id_role'];
+    $id_role = $_POST['id_role']; // 1=admin, 2=petugas, 3=peminjam
 
     /* ===============================
        CEK PASSWORD DIISI ATAU TIDAK
     =============================== */
-
     if (!empty($password)) {
-
-        // jika password diisi
+        // jika password diisi, hash dan update
         $password_hash = password_hash($password, PASSWORD_DEFAULT);
-
         $query = mysqli_query($connect, "
             UPDATE users SET
                 nama='$nama',
@@ -27,8 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             WHERE id_user='$id_user'
         ");
     } else {
-
-        // jika password kosong
+        // jika password kosong, tidak update password
         $query = mysqli_query($connect, "
             UPDATE users SET
                 nama='$nama',
@@ -39,13 +35,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 
     if ($query) {
-
+        /* ===============================
+           LOG AKTIVITAS
+        ================================ */
+        mysqli_query($connect, "
+            INSERT INTO log_aktivitas (id_user, username, role, aktivitas, waktu)
+            VALUES ('{$_SESSION['id_user']}', '{$_SESSION['username']}', '{$_SESSION['role']}', 'Mengedit akun id=$id_user', NOW())
+        ");
         $_SESSION['success'] = "Data berhasil diupdate";
     } else {
-
-        $_SESSION['error'] = "Gagal mengupdate data";
+        $_SESSION['error'] = "Gagal mengupdate data: " . mysqli_error($connect);
     }
 
     header("Location: ../index.php");
     exit;
 }
+?>
