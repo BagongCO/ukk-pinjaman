@@ -1,0 +1,30 @@
+Options +FollowSymLinks
+RewriteEngine On
+RewriteBase /ukk-pinjaman/
+
+# ============================================
+# FRONTEND ROUTING
+# ============================================
+
+# Index
+RewriteRule ^$ index.php [L,QSA]
+
+RewriteRule ^beranda$ index.php#beranda [L,QSA]
+RewriteRule ^lampu$ index.php#lampu [L,QSA]
+RewriteRule ^tentang$ index.php#about [L,QSA]
+RewriteRule ^contact$ index.php#contact [L,QSA]
+
+RewriteRule ^peminjam$ frontend/sections/peminjam.php [L,QSA]
+
+# ============================================
+# AUTH (Login/Register)
+# ============================================
+
+# Halaman Auth
+RewriteRule ^login$ frontend/auth/login.php [L,QSA]
+RewriteRule ^register$ frontend/auth/register.php [L,QSA]
+RewriteRule ^logout$ frontend/auth/logout.php [L,QSA]
+
+# Proses Auth (POST)
+RewriteRule ^auth/login$ frontend/auth/proses_login.php [L,QSA]
+RewriteRule ^auth/register$ frontend/auth/proses_register.php [L,QSA]

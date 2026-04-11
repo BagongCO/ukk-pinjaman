@@ -3,7 +3,8 @@ session_start();
 
 // Jika sudah login, redirect ke dashboard
 if (isset($_SESSION['login']) && $_SESSION['login'] === true) {
-    header("Location: ../dashboard/index.php");
+    // Gunakan path relatif ke root
+    header("Location: /ukk-pinjaman/");
     exit;
 }
 ?>
@@ -350,7 +351,7 @@ if (isset($_SESSION['login']) && $_SESSION['login'] === true) {
                     </div>
                 <?php endif; ?>
 
-                <form method="POST" action="proses_login.php">
+                <form method="POST" action="auth/login">
                     <div class="form-group">
                         <label><i class="fas fa-user"></i> Username</label>
                         <div class="input-group">
@@ -373,7 +374,7 @@ if (isset($_SESSION['login']) && $_SESSION['login'] === true) {
                 </form>
 
                 <div class="register-link">
-                    Belum punya akun? <a href="register.php">Daftar Sekarang</a>
+                    Belum punya akun? <a href="register">Daftar Sekarang</a>
                 </div>
 
                 <div class="text-center mt-3">

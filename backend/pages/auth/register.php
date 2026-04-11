@@ -1,18 +1,12 @@
 <?php
 session_start();
-
-// Jika sudah login, redirect ke dashboard
-if (isset($_SESSION['login']) && $_SESSION['login'] === true) {
-    header("Location: ../dashboard/index.php");
-    exit;
-}
 ?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login | Admin Panel - Peminjaman Lampu</title>
+    <title>Register | Peminjaman Lampu</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
@@ -53,7 +47,7 @@ if (isset($_SESSION['login']) && $_SESSION['login'] === true) {
             }
         }
 
-        /* LEFT SIDE - QUOTES (SAMA PANJANG dengan FORM) */
+        /* LEFT SIDE - QUOTES */
         .auth-left {
             flex: 1;
             background: linear-gradient(135deg, #4a148c, #6a1b9a, #9c27b0);
@@ -124,7 +118,7 @@ if (isset($_SESSION['login']) && $_SESSION['login'] === true) {
             gap: 8px;
         }
 
-        /* RIGHT SIDE - FORM (SAMA PANJANG dengan Quotes) */
+        /* RIGHT SIDE - FORM */
         .auth-right {
             flex: 1;
             display: flex;
@@ -148,7 +142,7 @@ if (isset($_SESSION['login']) && $_SESSION['login'] === true) {
 
         .auth-form .subtitle {
             color: #6c757d;
-            margin-bottom: 30px;
+            margin-bottom: 25px;
             font-size: 0.85rem;
         }
 
@@ -204,7 +198,7 @@ if (isset($_SESSION['login']) && $_SESSION['login'] === true) {
             outline: none;
         }
 
-        .btn-login {
+        .btn-register {
             width: 100%;
             background: linear-gradient(135deg, #6a1b9a, #9c27b0);
             border: none;
@@ -218,7 +212,7 @@ if (isset($_SESSION['login']) && $_SESSION['login'] === true) {
             margin-top: 10px;
         }
 
-        .btn-login:hover {
+        .btn-register:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 20px rgba(106, 27, 154, 0.3);
         }
@@ -245,28 +239,16 @@ if (isset($_SESSION['login']) && $_SESSION['login'] === true) {
             border-left: 3px solid #10b981;
         }
 
-        .register-link {
+        .login-link {
             text-align: center;
             margin-top: 20px;
             font-size: 0.8rem;
         }
 
-        .register-link a {
+        .login-link a {
             color: #6a1b9a;
             text-decoration: none;
             font-weight: 600;
-        }
-
-        .register-link a:hover {
-            text-decoration: underline;
-        }
-
-        .text-center {
-            text-align: center;
-        }
-
-        .mt-3 {
-            margin-top: 15px;
         }
 
         @media (max-width: 800px) {
@@ -276,15 +258,6 @@ if (isset($_SESSION['login']) && $_SESSION['login'] === true) {
             }
             .auth-left {
                 padding: 30px;
-            }
-            .auth-left h1 {
-                font-size: 1.5rem;
-            }
-            .quote-item {
-                margin-bottom: 20px;
-            }
-            .quote-text {
-                font-size: 0.8rem;
             }
         }
     </style>
@@ -297,7 +270,7 @@ if (isset($_SESSION['login']) && $_SESSION['login'] === true) {
                 <i class="fas fa-lightbulb"></i>
             </div>
             <h1>Peminjaman Lampu</h1>
-            <p>Admin Panel</p>
+            <p>Daftar sebagai Peminjam</p>
 
             <div class="quote-item">
                 <div class="quote-text">
@@ -330,11 +303,11 @@ if (isset($_SESSION['login']) && $_SESSION['login'] === true) {
             </div>
         </div>
 
-        <!-- RIGHT SIDE - FORM LOGIN -->
+        <!-- RIGHT SIDE - FORM REGISTER -->
         <div class="auth-right">
             <div class="auth-form">
-                <h2>Selamat Datang 👋</h2>
-                <p class="subtitle">Silakan masuk ke akun Admin/Petugas Anda</p>
+                <h2>Daftar Akun 🎉</h2>
+                <p class="subtitle">Isi data diri untuk menjadi Peminjam</p>
 
                 <?php if (isset($_SESSION['error'])): ?>
                     <div class="alert alert-danger">
@@ -350,39 +323,68 @@ if (isset($_SESSION['login']) && $_SESSION['login'] === true) {
                     </div>
                 <?php endif; ?>
 
-                <form method="POST" action="proses_login.php">
+                <form method="POST" action="proses_register.php">
                     <div class="form-group">
-                        <label><i class="fas fa-user"></i> Username</label>
+                        <label><i class="fas fa-user"></i> Nama Lengkap *</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="fas fa-user"></i></span>
-                            <input type="text" name="username" class="form-control" placeholder="Masukkan username" required autofocus>
+                            <input type="text" name="nama" class="form-control" placeholder="Masukkan nama lengkap" required>
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label><i class="fas fa-lock"></i> Password</label>
+                        <label><i class="fas fa-user-circle"></i> Username *</label>
                         <div class="input-group">
-                            <span class="input-group-text"><i class="fas fa-lock"></i></span>
-                            <input type="password" name="password" class="form-control" placeholder="Masukkan password" required>
+                            <span class="input-group-text"><i class="fas fa-user-circle"></i></span>
+                            <input type="text" name="username" class="form-control" placeholder="Masukkan username" required>
                         </div>
                     </div>
 
-                    <button type="submit" class="btn-login">
-                        <i class="fas fa-sign-in-alt me-2"></i> Login
+                    <div class="form-group">
+                        <label><i class="fas fa-lock"></i> Password *</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                            <input type="password" name="password" id="password" class="form-control" placeholder="Minimal 6 karakter" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label><i class="fas fa-lock"></i> Konfirmasi Password *</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                            <input type="password" name="confirm_password" id="confirm_password" class="form-control" placeholder="Ulangi password" required>
+                        </div>
+                    </div>
+
+                    <!-- Role otomatis peminjam (id_role = 3) -->
+                    <input type="hidden" name="id_role" value="3">
+
+                    <button type="submit" class="btn-register">
+                        <i class="fas fa-user-plus me-2"></i> Daftar Sekarang
                     </button>
                 </form>
 
-                <div class="register-link">
-                    Belum punya akun? <a href="register.php">Daftar Sekarang</a>
-                </div>
-
-                <div class="text-center mt-3">
-                    <small class="text-muted">
-                        <i class="fas fa-shield-alt"></i> Hanya untuk Admin & Petugas
-                    </small>
+                <div class="login-link">
+                    Sudah punya akun? <a href="login.php">Login di sini</a>
                 </div>
             </div>
         </div>
     </div>
+
+    <script>
+        const password = document.getElementById('password');
+        const confirmPassword = document.getElementById('confirm_password');
+
+        function validatePassword() {
+            if (password.value !== confirmPassword.value) {
+                confirmPassword.setCustomValidity("Password tidak sama!");
+            } else {
+                confirmPassword.setCustomValidity('');
+            }
+        }
+
+        password.addEventListener('change', validatePassword);
+        confirmPassword.addEventListener('keyup', validatePassword);
+    </script>
 </body>
 </html>
