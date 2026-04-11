@@ -19,7 +19,7 @@ $role = isset($_SESSION['role']) ? $_SESSION['role'] : '';
                 <li class="nav-item"><a class="nav-link" href="/ukk-pinjaman/#tentang">Tentang</a></li>
                 <li class="nav-item"><a class="nav-link" href="/ukk-pinjaman/#contact">Contact</a></li>
                 <?php if ($isLoggedIn && ($role == 'admin' || $role == 'petugas')): ?>
-                    <li class="nav-item"><a class="nav-link" href="../backend/pages/dashboard/index.php">Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" href="peminjam">Peminjaman</a></li>
                     <li class="nav-item"><a class="btn-outline-purple ms-2" href="logout">Logout</a></li>
                 <?php elseif ($isLoggedIn && $role == 'peminjam'): ?>
                     <li class="nav-item"><a class="nav-link" href="peminjam">Peminjaman</a></li>

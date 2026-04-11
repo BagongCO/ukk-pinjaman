@@ -1,5 +1,45 @@
 <?php
 session_start();
+include_once '../../config/connection.php';
+
+// PROSES REGISTER
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $nama = mysqli_real_escape_string($connect, $_POST['nama']);
+    $username = mysqli_real_escape_string($connect, $_POST['username']);
+    $password = $_POST['password'];
+    $confirm_password = $_POST['confirm_password'];
+    $id_role = 3;
+
+    $errors = [];
+
+    if (empty($nama)) $errors[] = "Nama lengkap harus diisi.";
+    if (empty($username)) $errors[] = "Username harus diisi.";
+    if (strlen($username) < 3) $errors[] = "Username minimal 3 karakter.";
+    if (empty($password)) $errors[] = "Password harus diisi.";
+    if (strlen($password) < 6) $errors[] = "Password minimal 6 karakter.";
+    if ($password !== $confirm_password) $errors[] = "Konfirmasi password tidak sama.";
+
+    $check = mysqli_query($connect, "SELECT * FROM users WHERE username = '$username'");
+    if (mysqli_num_rows($check) > 0) $errors[] = "Username '$username' sudah digunakan.";
+
+    if (empty($errors)) {
+        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+        $query = "INSERT INTO users (nama, username, password, id_role, created_at) 
+                  VALUES ('$nama', '$username', '$hashed_password', $id_role, NOW())";
+        
+        if (mysqli_query($connect, $query)) {
+            $_SESSION['success'] = "Registrasi berhasil! Silakan login.";
+            header("Location: login");
+            exit;
+        } else {
+            $errors[] = "Gagal registrasi: " . mysqli_error($connect);
+        }
+    }
+    
+    $_SESSION['error'] = implode("<br>", $errors);
+    header("Location: register");
+    exit;
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -9,12 +49,12 @@ session_start();
     <title>Register | Peminjaman Lampu</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        /* style sama seperti sebelumnya */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-
         body {
             font-family: 'Inter', 'Segoe UI', sans-serif;
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
@@ -24,7 +64,6 @@ session_start();
             justify-content: center;
             padding: 20px;
         }
-
         .auth-container {
             display: flex;
             max-width: 1000px;
@@ -35,7 +74,6 @@ session_start();
             overflow: hidden;
             animation: fadeInUp 0.5s ease;
         }
-
         @keyframes fadeInUp {
             from {
                 opacity: 0;
@@ -46,8 +84,6 @@ session_start();
                 transform: translateY(0);
             }
         }
-
-        /* LEFT SIDE - QUOTES */
         .auth-left {
             flex: 1;
             background: linear-gradient(135deg, #4a148c, #6a1b9a, #9c27b0);
@@ -59,7 +95,6 @@ session_start();
             position: relative;
             overflow: hidden;
         }
-
         .auth-left::before {
             content: "💡";
             font-size: 200px;
@@ -69,7 +104,6 @@ session_start();
             opacity: 0.08;
             pointer-events: none;
         }
-
         .logo-icon {
             width: 70px;
             height: 70px;
@@ -80,36 +114,30 @@ session_start();
             justify-content: center;
             margin-bottom: 30px;
         }
-
         .logo-icon i {
             font-size: 35px;
         }
-
         .auth-left h1 {
             font-size: 1.8rem;
             font-weight: 700;
             margin-bottom: 10px;
         }
-
         .auth-left p {
             font-size: 0.85rem;
             opacity: 0.8;
             margin-bottom: 40px;
         }
-
         .quote-item {
             margin-bottom: 30px;
             border-left: 3px solid rgba(255,255,255,0.3);
             padding-left: 20px;
         }
-
         .quote-text {
             font-size: 0.9rem;
             line-height: 1.5;
             font-style: italic;
             margin-bottom: 8px;
         }
-
         .quote-author {
             font-size: 0.75rem;
             opacity: 0.7;
@@ -117,8 +145,6 @@ session_start();
             align-items: center;
             gap: 8px;
         }
-
-        /* RIGHT SIDE - FORM */
         .auth-right {
             flex: 1;
             display: flex;
@@ -127,29 +153,24 @@ session_start();
             padding: 50px 40px;
             background: white;
         }
-
         .auth-form {
             width: 100%;
             max-width: 320px;
         }
-
         .auth-form h2 {
             font-size: 1.6rem;
             font-weight: 700;
             color: #1a1a2e;
             margin-bottom: 8px;
         }
-
         .auth-form .subtitle {
             color: #6c757d;
             margin-bottom: 25px;
             font-size: 0.85rem;
         }
-
         .form-group {
             margin-bottom: 20px;
         }
-
         .form-group label {
             display: block;
             font-size: 0.7rem;
@@ -159,12 +180,10 @@ session_start();
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-
         .form-group label i {
             margin-right: 5px;
             color: #6a1b9a;
         }
-
         .input-group {
             display: flex;
             align-items: center;
@@ -172,19 +191,16 @@ session_start();
             border-radius: 10px;
             transition: all 0.3s;
         }
-
         .input-group:focus-within {
             border-color: #6a1b9a;
             box-shadow: 0 0 0 3px rgba(106, 27, 154, 0.1);
         }
-
         .input-group-text {
             background: transparent;
             border: none;
             padding: 0 0 0 12px;
             color: #6a1b9a;
         }
-
         .form-control {
             width: 100%;
             padding: 11px 12px;
@@ -193,11 +209,9 @@ session_start();
             background: transparent;
             border-radius: 10px;
         }
-
         .form-control:focus {
             outline: none;
         }
-
         .btn-register {
             width: 100%;
             background: linear-gradient(135deg, #6a1b9a, #9c27b0);
@@ -211,12 +225,10 @@ session_start();
             transition: all 0.3s;
             margin-top: 10px;
         }
-
         .btn-register:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 20px rgba(106, 27, 154, 0.3);
         }
-
         .alert {
             padding: 10px 12px;
             border-radius: 8px;
@@ -226,31 +238,26 @@ session_start();
             align-items: center;
             gap: 8px;
         }
-
         .alert-danger {
             background: #fee2e2;
             color: #991b1b;
             border-left: 3px solid #ef4444;
         }
-
         .alert-success {
             background: #d1fae5;
             color: #065f46;
             border-left: 3px solid #10b981;
         }
-
         .login-link {
             text-align: center;
             margin-top: 20px;
             font-size: 0.8rem;
         }
-
         .login-link a {
             color: #6a1b9a;
             text-decoration: none;
             font-weight: 600;
         }
-
         @media (max-width: 800px) {
             .auth-container {
                 flex-direction: column;
@@ -264,14 +271,12 @@ session_start();
 </head>
 <body>
     <div class="auth-container">
-        <!-- LEFT SIDE - QUOTES -->
         <div class="auth-left">
             <div class="logo-icon">
                 <i class="fas fa-lightbulb"></i>
             </div>
             <h1>Peminjaman Lampu</h1>
             <p>Daftar sebagai Peminjam</p>
-
             <div class="quote-item">
                 <div class="quote-text">
                     <i class="fas fa-quote-left" style="font-size: 0.7rem; opacity: 0.5; margin-right: 5px;"></i>
@@ -281,7 +286,6 @@ session_start();
                     <i class="fas fa-user-circle"></i> — Thomas Alva Edison
                 </div>
             </div>
-
             <div class="quote-item">
                 <div class="quote-text">
                     <i class="fas fa-quote-left" style="font-size: 0.7rem; opacity: 0.5; margin-right: 5px;"></i>
@@ -291,19 +295,8 @@ session_start();
                     <i class="fas fa-microscope"></i> — Nikola Tesla
                 </div>
             </div>
-
-            <div class="quote-item">
-                <div class="quote-text">
-                    <i class="fas fa-quote-left" style="font-size: 0.7rem; opacity: 0.5; margin-right: 5px;"></i>
-                    Dengan lampu yang tepat, setiap acara bisa menjadi momen yang tak terlupakan.
-                </div>
-                <div class="quote-author">
-                    <i class="fas fa-lightbulb"></i> — Peminjaman Lampu
-                </div>
-            </div>
         </div>
 
-        <!-- RIGHT SIDE - FORM REGISTER -->
         <div class="auth-right">
             <div class="auth-form">
                 <h2>Daftar Akun 🎉</h2>
@@ -323,7 +316,7 @@ session_start();
                     </div>
                 <?php endif; ?>
 
-                <form method="POST" action="auth/register">
+                <form method="POST" action="">
                     <div class="form-group">
                         <label><i class="fas fa-user"></i> Nama Lengkap *</label>
                         <div class="input-group">
@@ -355,9 +348,6 @@ session_start();
                             <input type="password" name="confirm_password" id="confirm_password" class="form-control" placeholder="Ulangi password" required>
                         </div>
                     </div>
-
-                    <!-- Role otomatis peminjam (id_role = 3) -->
-                    <input type="hidden" name="id_role" value="3">
 
                     <button type="submit" class="btn-register">
                         <i class="fas fa-user-plus me-2"></i> Daftar Sekarang

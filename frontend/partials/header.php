@@ -19,6 +19,9 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
+    <!-- Favicon -->
+    <link rel="shortcut icon" href="/ukk-pinjaman/frontend/lampu.jpeg" />
+
     <style>
         * {
             margin: 0;

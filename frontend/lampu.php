@@ -21,7 +21,7 @@
                                 </div>
                                 <div class="price mt-2">Rp <?= number_format($l['harga_per_jam'], 0, ',', '.') ?> <small>/ jam</small></div>
                                 <p class="text-muted small mt-2"><?= substr(htmlspecialchars($l['deskripsi'] ?? 'Lampu berkualitas untuk berbagai acara'), 0, 70) ?>...</p>
-                                <a href="../backend/pages/auth/login.php" class="btn btn-card mt-3"><i class="fas fa-calendar-check me-2"></i> Sewa Sekarang</a>
+                                <a href="peminjam" class="btn btn-card mt-3"><i class="fas fa-calendar-check me-2"></i> Sewa Sekarang</a>
                             </div>
                         </div>
                     </div>
@@ -32,9 +32,6 @@
                     <h5 class="mt-3">Belum ada lampu tersedia</h5>
                 </div>
             <?php endif; ?>
-        </div>
-        <div class="text-center mt-5" data-aos="fade-up">
-            <a href="../backend/pages/auth/login.php" class="btn btn-outline-purple rounded-pill px-5 py-2">Lihat Semua Lampu <i class="fas fa-arrow-right ms-2"></i></a>
         </div>
     </div>
 </section>
